@@ -6,7 +6,7 @@
   <title>CRM CLEM FORMATION - ALTERNANCE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Inter+Tight:wght@600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -17,6 +17,7 @@
     /* ============ RESET & BASE ============ */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef1f6; color: #0f172a; -webkit-font-smoothing: antialiased; }
+    h1, h2, h3 { font-family: 'Inter Tight', 'Inter', sans-serif; }
 
     /* ============ HEADER ============ */
     .header {
@@ -27,7 +28,7 @@
     }
     .header::after {
       content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, #1a1a1a 0%, #DDDF4B 50%, #DDDF4B 100%);
+      background: linear-gradient(90deg, #1a1a1a 0%, #DDE04B 50%, #DDE04B 100%);
     }
     .header-left { display: flex; align-items: center; gap: 16px; }
     .header h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
@@ -36,8 +37,8 @@
     .header-actions .btn { backdrop-filter: blur(8px); }
     .header-actions .btn-outline { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.85); }
     .header-actions .btn-outline:hover { border-color: rgba(255,255,255,0.5); color: white; background: rgba(255,255,255,0.08); }
-    .header-actions .btn-primary { background: linear-gradient(135deg, #1a1a1a, #2d2d2d); box-shadow: 0 2px 12px rgba(26,26,26,0.4); }
-    .header-actions .btn-primary:hover { box-shadow: 0 4px 20px rgba(26,26,26,0.6); transform: translateY(-1px); }
+    .header-actions .btn-primary { background: #DDE04B; color: #111; font-weight: 700; box-shadow: 0 2px 10px rgba(221,224,75,0.35); border: 2px solid #111; padding: 8px 14px; }
+    .header-actions .btn-primary:hover { background: #c8ca42; box-shadow: 0 4px 16px rgba(221,224,75,0.55); transform: translateY(-1px); color: #111; border-color: #111; }
 
     /* ============ TABS ============ */
     .tabs {
@@ -461,8 +462,11 @@
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
               <img src="/parcoursup/assets/images/logo-clem.png" alt="CLEM" style={{ height: 72, objectFit: 'contain' }} />
             </div>
-            <h1 style={{ fontSize: 26, fontWeight: 900, color: '#0f172a', marginBottom: 6, letterSpacing: '-0.5px' }}>CRM CLEM FORMATION - ALTERNANCE</h1>
-            <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 36, fontWeight: 500 }}>Accès réservé aux équipes Admission</p>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: '#0d0d04', marginBottom: 8, letterSpacing: '-0.5px', fontFamily: 'Inter Tight, Inter, sans-serif', lineHeight: 1.15 }}>CRM CLEM FORMATION<br/>ALTERNANCE</h1>
+            <p style={{ color: '#0d0d04', fontSize: 14, marginBottom: 6, fontWeight: 700, letterSpacing: '0.2px' }}>
+              Simple, <span style={{ background: '#DDE04B', padding: '0 4px' }}>humain</span>, efficace.
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 32, fontWeight: 500 }}>Accès réservé aux équipes Admission</p>
             <form onSubmit={handleSubmit}>
               <input
                 type="password"
@@ -476,11 +480,12 @@
               />
               {error && <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12, fontWeight: 600 }}>{error}</div>}
               <button type="submit" disabled={loading || !pin} style={{
-                width: '100%', padding: '16px', fontSize: 15, fontWeight: 700, color: 'white', border: 'none',
-                borderRadius: 14, cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'Inter, sans-serif',
+                width: '100%', padding: '16px', fontSize: 15, fontWeight: 800, color: loading || !pin ? '#64748b' : '#111',
+                border: loading || !pin ? '2px solid #cbd5e1' : '2px solid #111',
+                borderRadius: 14, cursor: loading || !pin ? 'not-allowed' : 'pointer', transition: 'all 0.3s', fontFamily: 'Inter Tight, Inter, sans-serif',
                 letterSpacing: '0.3px',
-                background: loading || !pin ? '#cbd5e1' : 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #DDDF4B 100%)',
-                boxShadow: loading || !pin ? 'none' : '0 4px 20px rgba(26,26,26,0.3)',
+                background: loading || !pin ? '#f1f5f9' : '#DDE04B',
+                boxShadow: loading || !pin ? 'none' : '0 4px 18px rgba(221,224,75,0.45)',
               }}>
                 {loading ? 'Connexion...' : 'Accéder au CRM'}
               </button>
@@ -756,7 +761,7 @@
         <div>
           <header className="header">
             <div className="header-left">
-              <img src="/parcoursup/assets/images/logo-clem.png" alt="CLEM" style={{ height: 48, objectFit: 'contain' }} />
+              <img src="/parcoursup/assets/images/logo-clem-white.png" alt="CLEM" style={{ height: 48, objectFit: 'contain' }} />
               <div>
                 <h1>CRM CLEM FORMATION - ALTERNANCE</h1>
                 <div className="subtitle">Suivi des candidats Admission</div>
@@ -1158,7 +1163,7 @@
                     <div className="card-name">
                       {c.genre && <span title={c.genre === 'F' ? 'Fille' : 'Garçon'} style={{ marginRight: 4 }}>{c.genre === 'F' ? '♀' : '♂'}</span>}
                       {c.prenom} {c.nom}
-                      {c.rating > 0 && <span style={{ marginLeft: 6, color: '#DDDF4B', fontSize: 12, letterSpacing: -1 }}>{'★'.repeat(c.rating)}</span>}
+                      {c.rating > 0 && <span style={{ marginLeft: 6, color: '#DDE04B', fontSize: 12, letterSpacing: -1 }}>{'★'.repeat(c.rating)}</span>}
                     </div>
                     <div className="card-formation">
                       {c.formation}
@@ -1846,7 +1851,7 @@
               onClick={() => !readOnly && onChange && onChange(star === value ? 0 : star)}
               onMouseEnter={() => !readOnly && setHover(star)}
               onMouseLeave={() => !readOnly && setHover(0)}
-              style={{ fontSize: size, color: star <= (hover || value) ? '#DDDF4B' : '#ddd', transition: 'color 0.15s', lineHeight: 1 }}
+              style={{ fontSize: size, color: star <= (hover || value) ? '#DDE04B' : '#ddd', transition: 'color 0.15s', lineHeight: 1 }}
             >&#9733;</span>
           ))}
         </div>
