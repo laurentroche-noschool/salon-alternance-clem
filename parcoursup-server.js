@@ -2087,15 +2087,19 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.redirect('/parcoursup');
+  res.redirect('/crm');
 });
 
-app.get('/parcoursup', (req, res) => {
+// Handler unique : sert la même UI sous /crm (URL publique CLEM) et /parcoursup (URL legacy).
+// Les routes API et assets statiques restent sous /parcoursup/* pour ne rien casser côté frontend.
+const serveCrmUi = (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   res.sendFile(path.join(__dirname, 'public', 'parcoursup.html'));
-});
+};
+app.get('/crm', serveCrmUi);
+app.get('/parcoursup', serveCrmUi);
 
 app.listen(PORT, () => {
   console.log(`\n  Parcoursup CRM running on http://localhost:${PORT}/parcoursup\n`);
