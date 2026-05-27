@@ -1,0 +1,1890 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admission Hub - Suivi Admissions</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://unpkg.com/lucide-static@0.344.0/font/lucide.css" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #F8F9FA; color: #2C3E50; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  textarea:focus, input:focus, select:focus { border-color: #2E75B6 !important; }
+  @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+  .slide-in { animation: slideIn 0.25s ease-out; }
+  .fade-in { animation: fadeIn 0.2s ease-out; }
+  .toast-enter { animation: fadeIn 0.3s ease-out; }
+  tr:hover td { background: #F8F9FA !important; }
+  .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important; cursor: grab; }
+  .kanban-card:active { cursor: grabbing; }
+  .kanban-card[draggable]:active { opacity: 0.6; }
+  .action-btn:hover { transform: scale(1.15); }
+  .team-card:hover { background: #F8F9FA; border-color: #2E75B6 !important; }
+  button:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useCallback, useEffect, useRef } = React;
+
+// ===== ICONS (SVG inline) =====
+const Icon = ({ name, size = 16, color = 'currentColor', ...props }) => {
+  const icons = {
+    phone: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+    mail: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
+    messageSquare: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+    search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+    bell: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+    chevronDown: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+    home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+    alertTriangle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
+    zap: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    info: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+    users: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    barChart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>,
+    kanban: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="6" height="14" x="2" y="5" rx="1"/><rect width="6" height="8" x="16" y="5" rx="1"/><rect width="6" height="11" x="9" y="5" rx="1"/></svg>,
+    userPlus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>,
+    whatsapp: <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.574-1.468A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.17 0-4.18-.588-5.926-1.614l-.424-.254-2.715.871.886-2.633-.278-.442A9.777 9.777 0 012.182 12c0-5.422 4.396-9.818 9.818-9.818 5.422 0 9.818 4.396 9.818 9.818 0 5.422-4.396 9.818-9.818 9.818z"/></svg>,
+    clock: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+    checkCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+    filter: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+    download: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+    plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+// ===== DATA =====
+const formations = [
+  'BTS MCO','BTS NDRC','BTS Assurance','BTS Professions Immobilières','BTS Banque','BTS Tourisme',
+  'BTS GPME','BTS Comptabilité Gestion','BTS Communication','BTS SAM',
+  'Bachelor RH','Bachelor Immobilier','Bachelor Banque Finance','Bachelor Business Developer',
+  'Bachelor Marketing Digital','Bachelor Commerce International','Bachelor Office Manager','Bachelor Assurance',
+  'Mastère Commerce et Marketing','Mastère RH','Mastère Banque Finance','Mastère Assurance','Mastère Immobilier',
+  'TP Négociateur Technico Commercial','TP RH Collaborateur Paie','TP Assistant Immobilier','TP Conseiller Vendeur'
+];
+const sources = ['Candidature Internet','Salon','Tag','Parrainage','Appel entrant','Instagram','Facebook','Google Ads','Partenaire'];
+const realCandidates = [
+  { email: 'sangha.lee84@gmail.com', phone: '06 18 77 36 94' },
+  { email: 'cbouhabel@gmail.com', phone: '07 53 24 33 77' },
+  { email: 'louis091105@icloud.com', phone: '06 07 38 01 20' },
+  { email: 'mathispagnerre@gmail.com', phone: '07 68 01 42 08' },
+  { email: 'maylis.fereol14@gmail.com', phone: '06 50 49 12 07' },
+  { email: 'burteysacha@gmail.com', phone: '06 60 52 61 42' },
+  { email: 'pascalcerutti@gmail.com', phone: '' },
+  { email: 'moronvalleemmy291@gmail.com', phone: '' },
+  { email: 'jaurestakam3@gmail.com', phone: '' },
+  { email: 'meriton.rekaj7@gmail.com', phone: '' },
+  { email: 'smitselona126@gmail.com', phone: '' },
+  { email: 'deouzengambele9@gmail.com', phone: '+24176465451' }
+];
+const firstNames = ['Jean','Marie','Pierre','Sophie','Luc','Claire','Marc','Anne','Philippe','Isabelle','François','Nathalie','Paul','Catherine','André','Christine','Bruno','Valérie','Olivier','Stéphanie'];
+const lastNames = ['Martin','Bernard','Thomas','Robert','Richard','Petit','Durand','Lefevre','Moreau','Simon','Laurent','Lefebvre','Michel','Garcia','David','Bertrand','Roux','Vincent','Fournier','Morel'];
+const allStatuses = [
+  'Prospect','Prospect - Première connexion faite','Prospect - Page paiement Ouverte',
+  'Candidat','Candidat - Début de candidature','Candidat - Données Administratives',
+  'Candidat - Parcours souhaités','Candidat - Test à faire','Candidat - Test à faire - relancé',
+  'Candidat - Test à corriger','Candidat - Admission à faire','Candidat - Attente PIAF',
+  'Candidat - PIAF à valider','Admis','Admis - Attente paiement','Admis - Atelier TRE - inscrit',
+  'Admis - Matching','Admis - CV à valider','Admis - Attente CV','Etudiant','Abandon','Refus'
+];
+const defaultTeamMembers = []; // Page blanche - conseillers ajoutés par l'utilisateur
+const teamColors = ['#667EEA','#764BA2','#DDDF4B','#27AE60','#E67E22','#2E75B6','#8E44AD','#1ABC9C','#E74C3C','#F39C12'];
+const defaultPipelineStatuses = ['Nouveau Lead','Contacté','Qualifié','RDV Planifié','Candidat','Admis'];
+const randomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const generateLeads = (count) => {
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const c = realCandidates[i % realCandidates.length];
+    const created = new Date();
+    created.setMinutes(created.getMinutes() - Math.random() * 180);
+    out.push({
+      id: i + 1,
+      name: `${randomItem(firstNames)} ${randomItem(lastNames)}`,
+      email: c.email, phone: c.phone,
+      formation: randomItem(formations),
+      campus: Math.random() > 0.5 ? 'Bordeaux' : 'Mont de Marsan',
+      status: randomItem(allStatuses),
+      source: randomItem(sources),
+      assignee: Math.random() < 0.25 ? null : randomItem(teamMembers).id,
+      score: Math.floor(Math.random() * 100),
+      createdAt: created,
+      calls: Math.floor(Math.random() * 5),
+      emails: Math.floor(Math.random() * 8),
+      sms: Math.floor(Math.random() * 3),
+      pipelineStatus: randomItem(pipelineStatuses),
+      timeline: [
+        { type: 'call', time: new Date(Date.now() - Math.random() * 86400000), message: 'Appel entrant - candidat intéressé' },
+        { type: 'email', time: new Date(Date.now() - Math.random() * 86400000), message: 'Email de confirmation envoyé' },
+        { type: 'note', time: new Date(Date.now() - Math.random() * 86400000), message: 'Candidat très motivé, à relancer rapidement' }
+      ],
+      notes: 'Candidat prometteur avec bonne expérience.'
+    });
+  }
+  return out;
+};
+
+const initialLeads = []; // Page blanche - données chargées depuis le CRM
+
+const formatTimeAgo = (d) => {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}j`;
+};
+
+const statusColor = (st) => {
+  if (st.includes('Admis')) return { bg: '#E8F5E9', color: '#388E3C' };
+  if (st.includes('Candidat')) return { bg: '#F3E5F5', color: '#7B1FA2' };
+  if (st.includes('Prospect')) return { bg: '#E3F2FD', color: '#1976D2' };
+  if (st.includes('Etudiant')) return { bg: '#E0F2F1', color: '#00796B' };
+  if (st.includes('Abandon')) return { bg: '#FFEBEE', color: '#C62828' };
+  if (st.includes('Refus')) return { bg: '#FBE9E7', color: '#D84315' };
+  return { bg: '#E3F2FD', color: '#1976D2' };
+};
+
+// ===== AUTOMATION HELPERS =====
+// Normalize automations: support old single-object format and new array format
+function normalizeAutomations(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  const result = {};
+  for (const [stage, val] of Object.entries(raw)) {
+    if (Array.isArray(val)) {
+      result[stage] = val;
+    } else if (val && typeof val === 'object') {
+      // Old single-automation format: convert to array of one
+      result[stage] = [{ ...val, id: val.id || Math.random().toString(36).substr(2, 9), type: val.type || 'email' }];
+    }
+  }
+  return result;
+}
+
+function genAutoId() {
+  return Math.random().toString(36).substr(2, 9);
+}
+
+// Count active automations for a stage (works with array format)
+function countActiveAutomations(automations, stage) {
+  const list = automations[stage];
+  if (!Array.isArray(list)) return 0;
+  return list.filter(a => a.enabled).length;
+}
+
+// ===== CRM API =====
+const API_BASE = '/admission/api';
+async function apiFetch(path) {
+  try {
+    const res = await fetch(API_BASE + path);
+    return await res.json();
+  } catch (e) { return { error: e.message }; }
+}
+async function apiPost(path, body) {
+  try {
+    const res = await fetch(API_BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return await res.json();
+  } catch (e) { return { error: e.message }; }
+}
+
+// Convert CRM candidates to lead format
+function crmToLead(c, school, index) {
+  return {
+    id: c.id || index,
+    crmId: c.id,
+    name: [c.prenom, c.nom].filter(Boolean).join(' ') || c.email?.split('@')[0] || 'Sans nom',
+    email: c.email || '',
+    phone: c.telephone || '',
+    formation: c.formation || '',
+    campus: school === 'clem' ? 'Bordeaux' : 'Mont de Marsan',
+    status: c.statut || 'Prospect',
+    source: c.type || 'Candidature Internet',
+    assignee: null,
+    score: 0,
+    createdAt: c.dateStatut ? parseDate(c.dateStatut) : new Date(),
+    calls: 0, emails: 0, sms: 0,
+    pipelineStatus: c.statut?.includes('Admis') ? 'Admis' : c.statut?.includes('Candidat') ? 'Candidat' : 'Nouveau Lead',
+    timeline: [{ type: 'note', time: new Date(), message: `Importé depuis CRM ${school}` }],
+    notes: '', school: school,
+  };
+}
+function parseDate(str) {
+  if (!str) return new Date();
+  const parts = str.split('/');
+  if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+  return new Date(str);
+}
+
+// ===== MAIN COMPONENT =====
+function AdmissionHub() {
+  const [leads, setLeads] = useState([]);
+  const [activeTab, setActiveTab] = useState('leads');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [assigneeFilter, setAssigneeFilter] = useState('');
+  const [campusFilter, setCampusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [assignModalLead, setAssignModalLead] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [school, setSchool] = useState('all');
+  const [viewMode, setViewMode] = useState('list');
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+  const [teamMembers, setTeamMembers] = useState(defaultTeamMembers);
+  const [pipelineStatuses, setPipelineStatuses] = useState(defaultPipelineStatuses);
+  const [draggedLead, setDraggedLead] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
+  const [showAddStage, setShowAddStage] = useState(false);
+  const [commPanel, setCommPanel] = useState(null);
+  const [newStageName, setNewStageName] = useState('');
+  const [automations, setAutomations] = useState({});
+  const [automationStage, setAutomationStage] = useState(null); // stage name to configure
+  const saveCountRef = useRef(0);
+
+  // ─── LOAD persisted data on mount ───
+  useEffect(() => {
+    Promise.all([
+      apiFetch('/leads').catch(() => []),
+      apiFetch('/pipeline').catch(() => defaultPipelineStatuses),
+      apiFetch('/team').catch(() => defaultTeamMembers),
+      apiFetch('/automations').catch(() => ({})),
+    ]).then(([savedLeads, savedPipeline, savedTeam, savedAutomations]) => {
+      if (Array.isArray(savedLeads) && savedLeads.length > 0) setLeads(savedLeads);
+      if (Array.isArray(savedPipeline) && savedPipeline.length > 0) setPipelineStatuses(savedPipeline);
+      if (Array.isArray(savedTeam) && savedTeam.length > 0) setTeamMembers(savedTeam);
+      if (savedAutomations && typeof savedAutomations === 'object') setAutomations(normalizeAutomations(savedAutomations));
+      setTimeout(() => { saveCountRef.current = 1; }, 1000);
+    });
+  }, []);
+
+  // ─── AUTO-SAVE leads when they change ───
+  useEffect(() => {
+    if (saveCountRef.current < 1) return;
+    const timer = setTimeout(() => {
+      fetch('/admission/api/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads }) });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [leads]);
+
+  // ─── AUTO-SAVE pipeline stages when they change ───
+  useEffect(() => {
+    if (saveCountRef.current < 1) return;
+    const timer = setTimeout(() => {
+      fetch('/admission/api/pipeline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stages: pipelineStatuses }) });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [pipelineStatuses]);
+
+  // ─── AUTO-SAVE team when it changes ───
+  useEffect(() => {
+    if (saveCountRef.current < 1) return;
+    const timer = setTimeout(() => {
+      fetch('/admission/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team: teamMembers }) });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [teamMembers]);
+
+  const moveToPipeline = useCallback((leadId, newStatus) => {
+    setLeads(prev => {
+      const updated = prev.map(l => l.id === leadId ? { ...l, pipelineStatus: newStatus } : l);
+      const lead = updated.find(l => l.id === leadId);
+      // Check if automations exist for this stage (array format)
+      const stageAutos = Array.isArray(automations[newStatus]) ? automations[newStatus] : [];
+      const enabledAutos = stageAutos.filter(a => a.enabled);
+      if (lead && enabledAutos.length > 0) {
+        const replaceVars = (str) => (str || '').replace(/\{\{prenom\}\}/g, lead.firstName || lead.name?.split(' ')[0] || '').replace(/\{\{nom\}\}/g, lead.lastName || lead.name?.split(' ').slice(1).join(' ') || '').replace(/\{\{formation\}\}/g, lead.formation || '').replace(/\{\{campus\}\}/g, lead.campus || '').replace(/\{\{email\}\}/g, lead.email || '');
+        enabledAutos.forEach(auto => {
+          const autoType = auto.type || 'email';
+          const delayLabel = auto.delay.value === 0 ? 'immédiatement' : `dans ${auto.delay.value} ${auto.delay.unit}`;
+          if (autoType === 'email') {
+            fetch('/admission/api/queue-email', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ type: 'email', leadId: lead.id, to: lead.email, leadName: lead.name, subject: replaceVars(auto.subject), body: replaceVars(auto.body), delayValue: auto.delay.value, delayUnit: auto.delay.unit, stage: newStatus })
+            });
+            showToast(`⚡ Email auto programmé ${delayLabel} pour ${lead.name}`, 'info');
+          } else if (autoType === 'whatsapp') {
+            fetch('/admission/api/queue-email', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ type: 'whatsapp', leadId: lead.id, to: lead.phone || lead.email, leadName: lead.name, message: replaceVars(auto.message), delayValue: auto.delay.value, delayUnit: auto.delay.unit, stage: newStatus })
+            });
+            showToast(`⚡ WhatsApp auto programmé ${delayLabel} pour ${lead.name}`, 'info');
+          }
+        });
+      }
+      return updated;
+    });
+    showToast(`Déplacé vers "${newStatus}"`);
+  }, [automations]);
+
+  // Save automation config (array per stage)
+  const saveAutomations = useCallback((stage, automationList) => {
+    setAutomations(prev => {
+      const updated = { ...prev, [stage]: automationList };
+      fetch('/admission/api/automations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ automations: updated }) });
+      return updated;
+    });
+    const activeCount = automationList.filter(a => a.enabled).length;
+    showToast(`Automatisations "${stage}" sauvegardées (${activeCount} active${activeCount > 1 ? 's' : ''})`);
+  }, []);
+
+  const addPipelineStage = useCallback((name) => {
+    if (!name.trim() || pipelineStatuses.includes(name.trim())) return;
+    setPipelineStatuses(prev => [...prev, name.trim()]);
+    showToast(`Étape "${name.trim()}" ajoutée`);
+    setNewStageName('');
+    setShowAddStage(false);
+  }, [pipelineStatuses]);
+  // CRM connection state
+  const [crmStatus, setCrmStatus] = useState({ clem: { connected: false }, will: { connected: false } });
+  const [crmLoading, setCrmLoading] = useState(false);
+  const [crmDashboard, setCrmDashboard] = useState({ clem: null, will: null });
+  const [dataSource, setDataSource] = useState('demo');
+  const perPage = 15;
+
+  // Load CRM config on mount
+  useEffect(() => {
+    apiFetch('/config').then(data => {
+      if (!data.error) setCrmStatus(data);
+    });
+  }, []);
+
+  // Load CRM data
+  const loadCrmData = useCallback(async (targetSchool) => {
+    setCrmLoading(true);
+    try {
+      if (targetSchool === 'all') {
+        const data = await apiFetch('/combined');
+        if (data.error) { showToast(data.error, 'warning'); setCrmLoading(false); return; }
+        const allLeads = [];
+        let idx = 0;
+        for (const s of ['clem', 'will']) {
+          if (data[s]?.connected) {
+            setCrmDashboard(prev => ({ ...prev, [s]: data[s].dashboard }));
+            for (const view of ['prospects', 'candidats', 'admis']) {
+              if (data[s][view]?.candidates) {
+                data[s][view].candidates.forEach(c => allLeads.push(crmToLead(c, s, ++idx)));
+              }
+            }
+          }
+        }
+        if (allLeads.length > 0) { setLeads(allLeads); setDataSource('crm'); showToast(`${allLeads.length} leads chargés depuis les CRM`); }
+        else showToast('Aucune donnée CRM disponible - vérifiez la connexion', 'warning');
+      } else {
+        const s = targetSchool === 'CLEM' ? 'clem' : 'will';
+        const data = await apiFetch(`/all/${s}`);
+        if (data.error) { showToast(data.error, 'warning'); setCrmLoading(false); return; }
+        const allLeads = [];
+        let idx = 0;
+        if (data.dashboard) setCrmDashboard(prev => ({ ...prev, [s]: data.dashboard }));
+        for (const viewData of (data.views || [])) {
+          if (viewData.candidates) viewData.candidates.forEach(c => allLeads.push(crmToLead(c, s, ++idx)));
+        }
+        if (allLeads.length > 0) { setLeads(allLeads); setDataSource('crm'); showToast(`${allLeads.length} leads ${targetSchool} chargés`); }
+        else showToast(`Aucune donnée pour ${targetSchool}`, 'warning');
+      }
+    } catch (e) { showToast('Erreur de chargement CRM: ' + e.message, 'warning'); }
+    setCrmLoading(false);
+  }, []);
+
+  // Alertes dynamiques basées sur les données réelles
+  const alerts = useMemo(() => {
+    if (leads.length === 0) return [];
+    const a = [];
+    const unassigned = leads.filter(l => !l.assignee && l.status.includes('Prospect'));
+    if (unassigned.length > 0) a.push({ type: 'urgent', message: `${unassigned.length} prospect(s) non assigné(s)`, time: 'maintenant' });
+    const noContact = leads.filter(l => l.calls === 0 && l.emails === 0);
+    if (noContact.length > 0) a.push({ type: 'warning', message: `${noContact.length} lead(s) sans aucun contact`, time: 'maintenant' });
+    const prospects = leads.filter(l => l.status.includes('Prospect'));
+    if (prospects.length > 0) a.push({ type: 'info', message: `${prospects.length} prospect(s) à qualifier`, time: 'maintenant' });
+    const admis = leads.filter(l => l.status.includes('Admis'));
+    if (admis.length > 0) a.push({ type: 'info', message: `${admis.length} admis dans le pipeline`, time: 'maintenant' });
+    return a;
+  }, [leads]);
+
+  const showToast = useCallback((msg, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, msg, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+  }, []);
+
+  const filtered = useMemo(() => {
+    return leads.filter(l => {
+      const s = search.toLowerCase();
+      const matchSearch = !s || l.name.toLowerCase().includes(s) || l.email.toLowerCase().includes(s) || l.formation.toLowerCase().includes(s);
+      const matchStatus = !statusFilter || l.status.includes(statusFilter);
+      const matchAssignee = !assigneeFilter || (assigneeFilter === 'Unassigned' ? !l.assignee : l.assignee === assigneeFilter);
+      const matchCampus = !campusFilter || l.campus === campusFilter;
+      const matchSchool = school === 'all' || !l.school || (school === 'CLEM' ? l.school === 'clem' : l.school === 'will');
+      return matchSearch && matchStatus && matchAssignee && matchCampus && matchSchool;
+    });
+  }, [leads, search, statusFilter, assigneeFilter, campusFilter, school]);
+
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const pageLeads = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+  const kpis = useMemo(() => {
+    const unprocessed = leads.filter(l => l.status.includes('Prospect') && !l.assignee).length;
+    const unassigned = leads.filter(l => !l.assignee).length;
+    const callsToday = leads.reduce((sum, l) => sum + (l.calls || 0), 0);
+    const qualified = leads.filter(l => l.status.includes('Candidat') || l.status.includes('Admis') || l.status.includes('Etudiant')).length;
+    const admis = leads.filter(l => l.status.includes('Admis')).length;
+
+    // Temps de réponse moyen = temps entre createdAt et 1er contact (call/email/sms dans timeline)
+    let avgResponseTime = null;
+    const responseTimes = [];
+    leads.forEach(l => {
+      if (l.timeline && l.timeline.length > 0 && l.createdAt) {
+        const created = new Date(l.createdAt).getTime();
+        const firstContact = l.timeline
+          .filter(t => t.type === 'call' || t.type === 'email' || t.type === 'sms' || t.type === 'whatsapp')
+          .map(t => new Date(t.time).getTime())
+          .sort((a, b) => a - b)[0];
+        if (firstContact && firstContact > created) {
+          responseTimes.push(firstContact - created);
+        }
+      }
+    });
+    if (responseTimes.length > 0) {
+      const avgMs = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      const totalMin = Math.round(avgMs / 60000);
+      if (totalMin < 60) avgResponseTime = `${totalMin}min`;
+      else if (totalMin < 1440) avgResponseTime = `${Math.floor(totalMin/60)}h ${totalMin%60}min`;
+      else avgResponseTime = `${Math.floor(totalMin/1440)}j ${Math.floor((totalMin%1440)/60)}h`;
+    }
+
+    // Taux de conversion global
+    const convRate = leads.length > 0 ? Math.round(((qualified + admis) / leads.length) * 100) : 0;
+
+    return { unprocessed, unassigned, callsToday, qualified, admis, avgResponseTime, convRate, totalResponseLeads: responseTimes.length };
+  }, [leads]);
+
+  const performanceData = useMemo(() => {
+    return teamMembers.map(m => {
+      const mLeads = leads.filter(l => l.assignee === m.id);
+      // Comptage réel basé sur les actions enregistrées dans la timeline des leads
+      const callsToday = mLeads.reduce((sum, l) => sum + (l.calls || 0), 0);
+      const emailsSent = mLeads.reduce((sum, l) => sum + (l.emails || 0), 0);
+      const smsSent = mLeads.reduce((sum, l) => sum + (l.sms || 0), 0);
+      const qualif = mLeads.filter(l => l.status && (l.status.includes('Candidat') || l.status.includes('Admis') || l.status.includes('Etudiant'))).length;
+      const rate = mLeads.length > 0 ? Math.round((qualif / mLeads.length) * 100) : 0;
+      return { member: m, leads: mLeads.length, callsToday, emailsSent, smsSent, qualified: qualif, rate };
+    });
+  }, [leads, teamMembers]);
+
+  const assignLead = (leadId, memberId) => {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, assignee: memberId } : l));
+    const member = teamMembers.find(t => t.id === memberId);
+    showToast(`Lead assigné à ${member.name}`);
+    setAssignModalLead(null);
+  };
+
+  const changeStatus = (leadId, newStatus) => {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
+    setSelectedLead(prev => prev ? { ...prev, status: newStatus } : null);
+    showToast(`Statut changé : ${newStatus.split(' - ')[0]}`);
+  };
+
+  const addNewLead = (leadData) => {
+    const newLead = {
+      id: Date.now(),
+      ...leadData,
+      firstName: leadData.firstName || leadData.name?.split(' ')[0] || '',
+      lastName: leadData.lastName || leadData.name?.split(' ').slice(1).join(' ') || '',
+      score: 0,
+      createdAt: new Date().toISOString(),
+      calls: 0, emails: 0, sms: 0,
+      pipelineStatus: pipelineStatuses[0] || 'Nouveau Lead',
+      assignee: null,
+      timeline: [{ type: 'note', time: new Date().toISOString(), message: 'Lead créé manuellement' }],
+      notes: ''
+    };
+    setLeads(prev => [newLead, ...prev]);
+    showToast('Nouveau lead ajouté');
+    setShowNewLeadModal(false);
+  };
+
+  const priorityLevel = (st) => st.includes('Prospect') ? 'high' : st.includes('Candidat') ? 'medium' : 'low';
+  const isExpired = (l) => (Date.now() - new Date(l.createdAt).getTime()) / 60000 > 30;
+
+  // ===== STYLES =====
+  const S = {
+    header: { background: 'linear-gradient(135deg, #1B3A5C 0%, #2E5D8A 100%)', color: 'white', padding: '0.8rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 },
+    badge: { background: 'rgba(255,255,255,0.15)', padding: '0.3rem 0.7rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600 },
+    avatar: (bg) => ({ width: 34, height: 34, borderRadius: '50%', background: bg || 'linear-gradient(135deg,#667EEA,#764BA2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem', color: 'white', cursor: 'pointer', flexShrink: 0 }),
+    tab: (active) => ({ padding: '0.8rem 1.2rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: active ? '#2E75B6' : '#7F8C8D', borderBottom: active ? '3px solid #2E75B6' : '3px solid transparent', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.4rem' }),
+    kpiCard: { border: '1px solid #E1E5E8', borderRadius: 12, padding: '1rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s', background: 'white' },
+    statusBadge: (st) => { const c = statusColor(st); return { display: 'inline-block', padding: '0.3rem 0.6rem', borderRadius: 20, fontSize: '0.75rem', fontWeight: 600, background: c.bg, color: c.color, whiteSpace: 'nowrap' }; },
+    actionBtn: (bg) => ({ width: 28, height: 28, borderRadius: '50%', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg, color: 'white', transition: 'transform 0.2s', flexShrink: 0 }),
+    priorityDot: (level) => ({ width: 9, height: 9, borderRadius: '50%', background: level === 'high' ? '#E74C3C' : level === 'medium' ? '#E67E22' : '#95A5A6', flexShrink: 0 }),
+    progItem: (active) => ({ padding: '0.4rem 0.8rem', background: active ? '#2E75B6' : '#F8F9FA', color: active ? 'white' : '#2C3E50', borderRadius: 20, fontSize: '0.78rem', cursor: 'pointer', border: 'none', transition: 'all 0.2s' }),
+    actionBtnLarge: (bg) => ({ padding: '0.6rem 0.8rem', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.82rem', color: 'white', background: bg, flex: 1 }),
+    convBadge: (rate) => { const c = rate >= 70 ? '#27AE60' : rate >= 50 ? '#2E75B6' : rate >= 30 ? '#E67E22' : '#E74C3C'; const bg = rate >= 70 ? '#E8F5E9' : rate >= 50 ? '#E3F2FD' : rate >= 30 ? '#FFF3E0' : '#FFEBEE'; return { padding: '0.3rem 0.6rem', borderRadius: 20, fontWeight: 600, fontSize: '0.8rem', background: bg, color: c, display: 'inline-block' }; },
+  };
+
+  return (
+    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", background: '#F8F9FA', color: '#2C3E50', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+      {/* ===== HEADER ===== */}
+      <div style={{ ...S.header, background: school === 'CLEM' ? 'linear-gradient(135deg, #F9A825 0%, #F57F17 100%)' : school === 'CLEM' ? 'linear-gradient(135deg, #DDDF4B 0%, #AD1457 100%)' : S.header.background }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Icon name="zap" size={20} /> Admission Hub
+          </div>
+          <div style={S.badge}>{school}</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+          <div style={{ position: 'relative', cursor: 'pointer' }}>
+            <Icon name="bell" size={18} />
+            <div style={{ position: 'absolute', top: -5, right: -7, background: '#FF6B6B', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
+              {alerts.filter(a => a.type === 'urgent').length}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={S.avatar()}>CM</div>
+            <span style={{ fontSize: '0.85rem' }}>Cecilia Martin</span>
+            <Icon name="chevronDown" size={14} />
+          </div>
+          <select
+            value={school}
+            onChange={e => { setSchool(e.target.value); if (dataSource === 'crm') loadCrmData(e.target.value); }}
+            style={{ padding: '0.3rem 0.7rem', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem', color: 'white', outline: 'none' }}
+          >
+            <option value="all" style={{ color: '#2C3E50' }}>Toutes les écoles</option>
+            <option value="CLEM" style={{ color: '#2C3E50' }}>CLEM</option>
+            <option value="CLEM" style={{ color: '#2C3E50' }}>CLEM</option>
+          </select>
+          {dataSource === 'crm' && <div style={{ ...S.badge, background: '#27AE60' }}>CRM Live</div>}
+          {dataSource === 'demo' && <div style={{ ...S.badge, background: '#E67E22' }}>Demo</div>}
+        </div>
+      </div>
+
+      {/* ===== TABS ===== */}
+      <div style={{ background: 'white', borderBottom: '1px solid #E1E5E8', display: 'flex', padding: '0 1.5rem', flexShrink: 0 }}>
+        {[
+          { key: 'leads', label: 'Leads & Qualification', icon: 'users' },
+          { key: 'performance', label: 'Performance Équipe', icon: 'barChart' },
+          { key: 'pipeline', label: 'Pipeline Visuel', icon: 'kanban' },
+          { key: 'alerts', label: 'Alertes', icon: 'alertTriangle', badgeCount: alerts.filter(a => a.type === 'urgent').length },
+          { key: 'config', label: 'Connexion CRM', icon: 'zap' },
+        ].map(t => (
+          <button key={t.key} style={S.tab(activeTab === t.key)} onClick={() => setActiveTab(t.key)}>
+            <Icon name={t.icon} size={15} /> {t.label}
+            {t.badgeCount > 0 && <span style={{ background: '#E74C3C', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, marginLeft: 4 }}>{t.badgeCount}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ===== MAIN CONTENT ===== */}
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+        {/* ===== LEADS TAB ===== */}
+        {activeTab === 'leads' && (
+          <>
+            {/* KPIs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '0.8rem', padding: '1rem 1.5rem', background: 'white', borderBottom: '1px solid #E1E5E8', flexShrink: 0 }}>
+              {[
+                { label: 'Leads non traités', value: kpis.unprocessed, color: '#E74C3C', trend: leads.length > 0 ? `sur ${leads.length} leads` : '-' },
+                { label: 'Non assignés', value: kpis.unassigned, color: '#E67E22', trend: leads.length > 0 ? 'à affecter' : '-' },
+                { label: 'Total leads', value: leads.length, color: '#27AE60', trend: dataSource === 'crm' ? 'Données CRM' : leads.length > 0 ? 'Données locales' : '-' },
+                { label: 'Qualifiés', value: kpis.qualified, color: '#2E75B6', trend: leads.length > 0 ? `${Math.round(kpis.qualified / Math.max(leads.length, 1) * 100)}% du total` : '-' },
+                { label: 'Admis', value: kpis.admis, color: '#8E44AD', trend: leads.length > 0 ? `${Math.round(kpis.admis / Math.max(leads.length, 1) * 100)}% du total` : '-' },
+                { label: 'Temps réponse moyen', value: kpis.avgResponseTime || '-', color: '#00796B', trend: kpis.totalResponseLeads > 0 ? `sur ${kpis.totalResponseLeads} leads contactés` : 'Aucun contact' },
+                { label: 'Taux conversion', value: `${kpis.convRate}%`, color: kpis.convRate >= 50 ? '#27AE60' : kpis.convRate >= 25 ? '#E67E22' : '#E74C3C', trend: leads.length > 0 ? `${kpis.qualified + kpis.admis}/${leads.length} leads` : '-' },
+              ].map((kpi, i) => (
+                <div key={i} style={S.kpiCard}>
+                  <div style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 500, marginBottom: 4 }}>{kpi.label}</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700, color: kpi.color, marginBottom: 4 }}>{kpi.value}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#7F8C8D' }}>{kpi.trend}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Controls */}
+            <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', padding: '1rem 1.5rem', flexShrink: 0, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: '1 1 250px', maxWidth: 350 }}>
+                <div style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#7F8C8D' }}><Icon name="search" size={16} /></div>
+                <input
+                  style={{ width: '100%', padding: '0.6rem 0.8rem 0.6rem 2.2rem', border: '1px solid #E1E5E8', borderRadius: 8, fontSize: '0.88rem', outline: 'none' }}
+                  placeholder="Rechercher par nom, email, formation..."
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+                />
+              </div>
+              <select style={{ padding: '0.6rem 0.8rem', border: '1px solid #E1E5E8', borderRadius: 8, fontSize: '0.85rem', background: 'white', cursor: 'pointer' }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
+                <option value="">Tous les statuts</option>
+                <option value="Prospect">Prospect</option>
+                <option value="Candidat">Candidat</option>
+                <option value="Admis">Admis</option>
+                <option value="Etudiant">Étudiant</option>
+                <option value="Abandon">Abandon</option>
+                <option value="Refus">Refus</option>
+              </select>
+              <select style={{ padding: '0.6rem 0.8rem', border: '1px solid #E1E5E8', borderRadius: 8, fontSize: '0.85rem', background: 'white', cursor: 'pointer' }} value={assigneeFilter} onChange={e => { setAssigneeFilter(e.target.value); setCurrentPage(1); }}>
+                <option value="">Tous assignés</option>
+                <option value="Unassigned">Non assignés</option>
+                {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              <select style={{ padding: '0.6rem 0.8rem', border: '1px solid #E1E5E8', borderRadius: 8, fontSize: '0.85rem', background: 'white', cursor: 'pointer' }} value={campusFilter} onChange={e => { setCampusFilter(e.target.value); setCurrentPage(1); }}>
+                <option value="">Tous campus</option>
+                <option value="Bordeaux">Bordeaux</option>
+                <option value="Mont de Marsan">Mont de Marsan</option>
+              </select>
+              <div style={{ display: 'flex', gap: 4, background: '#F8F9FA', padding: 3, borderRadius: 6 }}>
+                <button onClick={() => setViewMode('list')} style={{ padding: '0.4rem 0.6rem', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', cursor: 'pointer', borderRadius: 4, fontSize: '0.82rem', boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>Liste</button>
+                <button onClick={() => setViewMode('kanban')} style={{ padding: '0.4rem 0.6rem', border: 'none', background: viewMode === 'kanban' ? 'white' : 'transparent', cursor: 'pointer', borderRadius: 4, fontSize: '0.82rem', boxShadow: viewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>Kanban</button>
+              </div>
+              <button onClick={() => setShowNewLeadModal(true)} style={{ padding: '0.6rem 1rem', border: 'none', background: '#2E75B6', color: 'white', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Icon name="plus" size={15} /> Nouveau Lead
+              </button>
+              <div style={{ marginLeft: 'auto', fontSize: '0.82rem', color: '#7F8C8D' }}>{filtered.length} résultats</div>
+            </div>
+
+            {/* Empty State */}
+            {leads.length === 0 && (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1.5rem', padding: '3rem' }}>
+                <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #E3F2FD, #F3E5F5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="users" size={36} color="#2E75B6" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem', color: '#2C3E50' }}>Bienvenue sur Admission Hub</h2>
+                  <p style={{ color: '#7F8C8D', fontSize: '0.95rem', maxWidth: 450, lineHeight: 1.6 }}>
+                    Aucun lead pour le moment. Connectez vos CRM ou ajoutez un lead manuellement pour commencer.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                  <button onClick={() => setActiveTab('config')} style={{ padding: '0.7rem 1.5rem', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg, #1B3A5C, #2E75B6)', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Icon name="zap" size={16} /> Connecter les CRM
+                  </button>
+                  <button onClick={() => setShowNewLeadModal(true)} style={{ padding: '0.7rem 1.5rem', border: '1px solid #E1E5E8', borderRadius: 8, background: 'white', color: '#2C3E50', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Icon name="plus" size={16} /> Ajouter un lead
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* List View */}
+            {viewMode === 'list' && leads.length > 0 && (
+              <>
+                <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #E1E5E8', borderRadius: 8, background: 'white', margin: '0 1.5rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '4%' }}></th>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '20%' }}>Lead</th>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '14%' }}>Statut</th>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '10%' }}>Source</th>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '8%' }}>Assigné</th>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '8%' }}>Contacts</th>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '6%' }}>Créé</th>
+                        <th style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8', position: 'sticky', top: 0, zIndex: 1, width: '12%' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pageLeads.map(lead => (
+                        <tr key={lead.id} onClick={() => setSelectedLead(lead)} style={{ cursor: 'pointer', background: lead.status.includes('Prospect') && isExpired(lead) ? 'rgba(231,76,60,0.04)' : 'transparent', transition: 'background 0.15s' }}>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}><div style={S.priorityDot(priorityLevel(lead.status))} /></td>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>
+                            <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {lead.name}
+                              {lead.school && <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: 3, background: lead.school === 'clem' ? '#1B3A5C' : '#DDDF4B', color: 'white', fontWeight: 600 }}>{lead.school === 'clem' ? 'NS' : 'WS'}</span>}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#7F8C8D' }}>{lead.formation} · {lead.campus}</div>
+                          </td>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}><span style={S.statusBadge(lead.status)}>{lead.status.length > 30 ? lead.status.split(' - ').slice(0,2).join(' - ') : lead.status}</span></td>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8', fontSize: '0.82rem', color: '#7F8C8D' }}>{lead.source}</td>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>
+                            {lead.assignee ? (
+                              <div onClick={e => { e.stopPropagation(); setAssignModalLead(lead); }} style={S.avatar()} title={teamMembers.find(t => t.id === lead.assignee)?.name}>{lead.assignee}</div>
+                            ) : (
+                              <button className="action-btn" onClick={e => { e.stopPropagation(); setAssignModalLead(lead); }} style={{ ...S.actionBtn('#2E75B6'), width: 30, height: 30 }}>
+                                <Icon name="userPlus" size={14} />
+                              </button>
+                            )}
+                          </td>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8', fontSize: '0.8rem', color: '#7F8C8D' }}>
+                            <span>📞 {lead.calls} · ✉ {lead.emails}</span>
+                          </td>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>
+                            <span style={{ fontSize: '0.82rem', padding: '0.2rem 0.5rem', borderRadius: 4, ...(isExpired(lead) ? { background: 'rgba(231,76,60,0.1)', color: '#E74C3C', fontWeight: 600 } : { color: '#7F8C8D' }) }}>
+                              {formatTimeAgo(lead.createdAt)}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>
+                            <div style={{ display: 'flex', gap: 5 }}>
+                              <button className="action-btn" style={S.actionBtn('#27AE60')} onClick={e => { e.stopPropagation(); if (lead.phone) { window.open('tel:' + lead.phone.replace(/\s/g,''), '_self'); setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, calls: (l.calls||0)+1, timeline: [...(l.timeline||[]), { type:'call', time: new Date().toISOString(), message:'Appel passé' }] } : l)); showToast(`Appel vers ${lead.phone}`); } else { showToast('Pas de numéro renseigné', 'warning'); } }} title="Appeler"><Icon name="phone" size={12} /></button>
+                              <button className="action-btn" style={S.actionBtn('#2E75B6')} onClick={e => { e.stopPropagation(); const gmailUrl = 'https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent(lead.email) + '&su=' + encodeURIComponent('Votre candidature - ' + (lead.formation||'')); window.open(gmailUrl, '_blank'); setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, emails: (l.emails||0)+1, timeline: [...(l.timeline||[]), { type:'email', time: new Date().toISOString(), message:'Email envoyé via Gmail' }] } : l)); showToast(`Gmail ouvert pour ${lead.email}`); }} title="Email"><Icon name="mail" size={12} /></button>
+                              <button className="action-btn" style={S.actionBtn('#25D366')} onClick={e => { e.stopPropagation(); if (lead.phone) { const phone = lead.phone.replace(/\s/g,'').replace(/^0/, '33'); window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent('Bonjour ' + lead.name.split(' ')[0] + ', concernant votre candidature en ' + (lead.formation||'') + '.'), '_blank'); setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, sms: (l.sms||0)+1, timeline: [...(l.timeline||[]), { type:'whatsapp', time: new Date().toISOString(), message:'WhatsApp envoyé' }] } : l)); showToast('WhatsApp ouvert'); } else { showToast('Pas de numéro', 'warning'); } }} title="WhatsApp"><Icon name="messageSquare" size={12} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Pagination */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 4, padding: '0.8rem', background: 'white', borderTop: '1px solid #E1E5E8', margin: '0 1.5rem 0.5rem', borderRadius: '0 0 8px 8px', flexShrink: 0 }}>
+                  {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => (
+                    <button key={i + 1} style={{ padding: '0.4rem 0.65rem', border: '1px solid #E1E5E8', background: currentPage === i + 1 ? '#2E75B6' : 'white', color: currentPage === i + 1 ? 'white' : '#2C3E50', cursor: 'pointer', borderRadius: 4, fontSize: '0.8rem' }} onClick={() => setCurrentPage(i + 1)}>{i + 1}</button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Kanban View (in leads tab) */}
+            {viewMode === 'kanban' && leads.length > 0 && (
+              <KanbanBoard
+                statuses={pipelineStatuses}
+                leads={filtered}
+                draggedLead={draggedLead} setDraggedLead={setDraggedLead}
+                dragOverCol={dragOverCol} setDragOverCol={setDragOverCol}
+                onMove={moveToPipeline}
+                onClickLead={setSelectedLead}
+                onAddStage={addPipelineStage}
+                showAddStage={showAddStage} setShowAddStage={setShowAddStage}
+                newStageName={newStageName} setNewStageName={setNewStageName}
+                onDeleteStage={(name, moveTo) => { if (moveTo) { setLeads(prev => prev.map(l => l.pipelineStatus === name ? { ...l, pipelineStatus: moveTo } : l)); } setPipelineStatuses(prev => prev.filter(s => s !== name)); showToast(`Étape "${name}" supprimée`); }}
+                onRenameStage={(oldName, newName) => { setPipelineStatuses(prev => prev.map(s => s === oldName ? newName : s)); setLeads(prev => prev.map(l => l.pipelineStatus === oldName ? { ...l, pipelineStatus: newName } : l)); showToast(`Renommé en "${newName}"`); }}
+                onReorderStages={(newOrder) => { setPipelineStatuses(newOrder); showToast('Étapes réorganisées'); }}
+                automations={automations}
+                onOpenAutomation={(stage) => setAutomationStage(stage)}
+                avatarStyle={S.avatar}
+              />
+            )}
+          </>
+        )}
+
+        {/* ===== PERFORMANCE TAB ===== */}
+        {activeTab === 'performance' && (
+          <div style={{ flex: 1, overflow: 'auto', padding: '1rem 1.5rem' }}>
+            <div style={{ border: '1px solid #E1E5E8', borderRadius: 8, background: 'white', marginBottom: '1.5rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr>
+                    {['Équipe','Leads','Appels','Emails','SMS','Qualifiés','Taux conv.','Rôle'].map(h => (
+                      <th key={h} style={{ padding: '0.8rem', textAlign: 'left', fontWeight: 600, color: '#7F8C8D', fontSize: '0.8rem', background: '#F8F9FA', borderBottom: '2px solid #E1E5E8' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {performanceData.map(d => (
+                    <tr key={d.member.id}>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <div style={{ ...S.avatar(), width: 32, height: 32, fontSize: '0.7rem' }}>{d.member.id}</div>
+                          <span style={{ fontWeight: 500 }}>{d.member.name}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>{d.leads}</td>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>{d.callsToday}</td>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>{d.emailsSent}</td>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>{d.smsSent}</td>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}>{d.qualified}</td>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8' }}><span style={S.convBadge(d.rate)}>{d.rate}%</span></td>
+                      <td style={{ padding: '0.8rem', borderBottom: '1px solid #E1E5E8', fontSize: '0.82rem', color: '#7F8C8D' }}>{d.member.role}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ background: 'white', border: '1px solid #E1E5E8', borderRadius: 8, padding: '1.2rem' }}>
+              <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Appels par conseiller (aujourd'hui)</h3>
+              {performanceData.map(d => (
+                <div key={d.member.id} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
+                  <div style={{ width: 130, fontWeight: 500, fontSize: '0.85rem', flexShrink: 0 }}>{d.member.name}</div>
+                  <div style={{ flex: 1, background: '#F8F9FA', borderRadius: 4, height: 26, position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.min((d.callsToday / 25) * 100, 100)}%`, background: 'linear-gradient(90deg,#2E75B6,#667EEA)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, color: 'white', fontSize: '0.78rem', fontWeight: 600, transition: 'width 0.5s' }}>
+                      {d.callsToday}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ===== PIPELINE TAB ===== */}
+        {activeTab === 'pipeline' && (
+          <KanbanBoard
+            statuses={pipelineStatuses}
+            leads={leads}
+            draggedLead={draggedLead} setDraggedLead={setDraggedLead}
+            dragOverCol={dragOverCol} setDragOverCol={setDragOverCol}
+            onMove={moveToPipeline}
+            onClickLead={setSelectedLead}
+            onAddStage={addPipelineStage}
+            showAddStage={showAddStage} setShowAddStage={setShowAddStage}
+            newStageName={newStageName} setNewStageName={setNewStageName}
+            onDeleteStage={(name, moveTo) => { if (moveTo) { setLeads(prev => prev.map(l => l.pipelineStatus === name ? { ...l, pipelineStatus: moveTo } : l)); } setPipelineStatuses(prev => prev.filter(s => s !== name)); showToast(`Étape "${name}" supprimée`); }}
+                onRenameStage={(oldName, newName) => { setPipelineStatuses(prev => prev.map(s => s === oldName ? newName : s)); setLeads(prev => prev.map(l => l.pipelineStatus === oldName ? { ...l, pipelineStatus: newName } : l)); showToast(`Renommé en "${newName}"`); }}
+            onReorderStages={(newOrder) => { setPipelineStatuses(newOrder); showToast('Étapes réorganisées'); }}
+            avatarStyle={S.avatar}
+          />
+        )}
+
+        {/* ===== ALERTS TAB ===== */}
+        {activeTab === 'alerts' && (
+          <div style={{ flex: 1, overflow: 'auto', padding: '1rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            {alerts.map((a, i) => (
+              <div key={i} className="fade-in" style={{ background: 'white', borderLeft: `4px solid ${a.type === 'urgent' ? '#E74C3C' : a.type === 'warning' ? '#E67E22' : '#2E75B6'}`, borderRadius: 6, padding: '1rem 1.2rem', display: 'flex', gap: '0.8rem', alignItems: 'flex-start', animationDelay: `${i * 0.05}s` }}>
+                <div style={{ color: a.type === 'urgent' ? '#E74C3C' : a.type === 'warning' ? '#E67E22' : '#2E75B6', flexShrink: 0, marginTop: 2 }}>
+                  {a.type === 'urgent' ? <Icon name="alertTriangle" size={18} /> : a.type === 'warning' ? <Icon name="zap" size={18} /> : <Icon name="info" size={18} />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 500, marginBottom: 2 }}>{a.message}</div>
+                  <div style={{ fontSize: '0.82rem', color: '#7F8C8D' }}>Il y a {a.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ===== CONFIG CRM TAB ===== */}
+        {activeTab === 'config' && (
+          <div style={{ flex: 1, overflow: 'auto', padding: '1.5rem' }}>
+            <div style={{ maxWidth: 800, margin: '0 auto' }}>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Connexion aux CRM</h2>
+              <p style={{ color: '#7F8C8D', fontSize: '0.88rem', marginBottom: '1.5rem' }}>
+                Connectez l'Admission Hub aux CRM CLEM et CLEM pour charger les données en temps réel.
+              </p>
+
+              {/* Instructions */}
+              <div style={{ background: '#EBF5FB', border: '1px solid #AED6F1', borderRadius: 8, padding: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#2E75B6' }}>Comment récupérer votre cookie de session :</div>
+                <ol style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: '#2C3E50', lineHeight: 1.8 }}>
+                  <li>Connectez-vous au CRM (crm.clem-formation.fr ou crm.clem-formation.fr)</li>
+                  <li>Appuyez sur <strong>F12</strong> pour ouvrir les DevTools</li>
+                  <li>Allez dans l'onglet <strong>Réseau (Network)</strong></li>
+                  <li>Rechargez la page, cliquez sur la première requête</li>
+                  <li>Dans les headers, copiez la valeur complète de <strong>Cookie</strong></li>
+                  <li>Collez-la ci-dessous</li>
+                </ol>
+              </div>
+
+              <CrmConfigCard
+                title="CLEM"
+                subtitle="crm.clem-formation.fr"
+                color="#1B3A5C"
+                logoText="NS"
+                school="clem"
+                status={crmStatus.clem}
+                dashboard={crmDashboard.clem}
+                onSave={async (cookie) => {
+                  const r = await apiPost('/config', { school: 'clem', cookie });
+                  if (r.ok) { showToast('Cookie CLEM sauvegardé'); setCrmStatus(prev => ({ ...prev, clem: { connected: true } })); }
+                  else showToast(r.error || 'Erreur', 'warning');
+                }}
+                onTest={async () => {
+                  const r = await apiFetch('/test/clem');
+                  if (r.connected) { showToast('Connexion CLEM OK'); setCrmDashboard(prev => ({ ...prev, clem: r.dashboard })); }
+                  else showToast('Échec : ' + (r.error || 'Session expirée'), 'warning');
+                  return r;
+                }}
+              />
+
+              <CrmConfigCard
+                title="CLEM"
+                subtitle="crm.clem-formation.fr"
+                color="#DDDF4B"
+                logoText="W"
+                school="will"
+                status={crmStatus.will}
+                dashboard={crmDashboard.will}
+                onSave={async (cookie) => {
+                  const r = await apiPost('/config', { school: 'will', cookie });
+                  if (r.ok) { showToast('Cookie CLEM sauvegardé'); setCrmStatus(prev => ({ ...prev, will: { connected: true } })); }
+                  else showToast(r.error || 'Erreur', 'warning');
+                }}
+                onTest={async () => {
+                  const r = await apiFetch('/test/will');
+                  if (r.connected) { showToast('Connexion CLEM OK'); setCrmDashboard(prev => ({ ...prev, will: r.dashboard })); }
+                  else showToast('Échec : ' + (r.error || 'Session expirée'), 'warning');
+                  return r;
+                }}
+              />
+
+              {/* SMTP Email Config */}
+              <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '0.8rem' }}>Configuration Email (SMTP)</h3>
+                <SmtpConfigCard showToast={showToast} />
+              </div>
+
+              {/* Load data button */}
+              <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                <button
+                  onClick={() => loadCrmData('all')}
+                  disabled={crmLoading}
+                  style={{ padding: '0.8rem 2rem', border: 'none', borderRadius: 8, background: crmLoading ? '#95A5A6' : 'linear-gradient(135deg, #1B3A5C, #2E75B6)', color: 'white', fontWeight: 700, fontSize: '1rem', cursor: crmLoading ? 'default' : 'pointer' }}
+                >
+                  {crmLoading ? 'Chargement en cours...' : 'Charger les données CRM'}
+                </button>
+                <button
+                  onClick={() => { setLeads(initialLeads); setDataSource('demo'); showToast('Données de démo chargées'); }}
+                  style={{ marginLeft: '1rem', padding: '0.8rem 1.5rem', border: '1px solid #E1E5E8', borderRadius: 8, background: 'white', color: '#7F8C8D', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                  Revenir aux données de démo
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ===== SIDE PANEL ===== */}
+      {selectedLead && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 200 }} onClick={() => setSelectedLead(null)} />
+          <div className="slide-in" style={{ position: 'fixed', right: 0, top: 0, width: 420, maxWidth: '90vw', height: '100vh', background: 'white', boxShadow: '-2px 0 12px rgba(0,0,0,0.15)', zIndex: 201, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '1.2rem 1.5rem', borderBottom: '1px solid #E1E5E8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <h2 style={{ fontWeight: 600, fontSize: '1.1rem' }}>{selectedLead.name}</h2>
+              <button onClick={() => setSelectedLead(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7F8C8D', padding: 0 }}><Icon name="x" size={20} /></button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.2rem 1.5rem' }}>
+              {/* Info */}
+              {[
+                { label: 'Formation', value: selectedLead.formation, style: { fontWeight: 600, color: '#2E75B6' } },
+                { label: 'Campus', value: selectedLead.campus },
+                { label: 'Email', value: selectedLead.email, style: { fontFamily: 'monospace', fontSize: '0.85rem' } },
+                { label: 'Téléphone', value: selectedLead.phone || 'Non renseigné' },
+                { label: 'Source', value: selectedLead.source },
+              ].map((item, i) => (
+                <div key={i} style={{ marginBottom: '1.2rem' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{item.label}</div>
+                  <div style={{ fontSize: '0.9rem', color: '#2C3E50', ...item.style }}>{item.value}</div>
+                </div>
+              ))}
+
+              {/* Score */}
+              <div style={{ marginBottom: '1.2rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Score de qualification</div>
+                <div style={{ width: '100%', height: 8, background: '#F8F9FA', borderRadius: 4, overflow: 'hidden', marginBottom: 4 }}>
+                  <div style={{ height: '100%', width: `${selectedLead.score}%`, background: `linear-gradient(90deg,#E74C3C 0%,#E67E22 50%,#27AE60 100%)`, borderRadius: 4 }} />
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#7F8C8D' }}>{selectedLead.score}/100</div>
+              </div>
+
+              {/* Status change */}
+              <div style={{ marginBottom: '1.2rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Changer le statut</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {['Prospect', 'Candidat', 'Admis', 'Etudiant', 'Abandon', 'Refus'].map(st => (
+                    <button key={st} style={S.progItem(selectedLead.status.includes(st))} onClick={() => changeStatus(selectedLead.id, st)}>{st}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: '0.8rem' }}>
+                <a href={`tel:${(selectedLead.phone || '').replace(/\s/g, '')}`} style={{ ...S.actionBtnLarge('#27AE60'), textDecoration: 'none' }}><Icon name="phone" size={15} /> Appeler</a>
+                <button style={S.actionBtnLarge('#2E75B6')} onClick={() => setCommPanel('email')}><Icon name="mail" size={15} /> Email</button>
+                <button style={S.actionBtnLarge('#8E44AD')} onClick={() => {
+                  const phone = (selectedLead.phone || '').replace(/\s/g, '').replace(/^0/, '33');
+                  if (phone) window.open(`sms:${phone}`, '_blank');
+                  else showToast('Pas de numéro renseigné', 'warning');
+                }}><Icon name="messageSquare" size={15} /> SMS</button>
+                <button style={S.actionBtnLarge('#25D366')} onClick={() => setCommPanel('whatsapp')}><Icon name="whatsapp" size={15} /> WhatsApp</button>
+              </div>
+
+              {/* Communication Panel - WhatsApp */}
+              {commPanel === 'whatsapp' && (
+                <WhatsAppPanel
+                  lead={selectedLead}
+                  onSend={(msg) => {
+                    const phone = (selectedLead.phone || '').replace(/\s/g, '').replace(/^0/, '33');
+                    if (!phone) { showToast('Pas de numéro renseigné', 'warning'); return; }
+                    const encoded = encodeURIComponent(msg);
+                    window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
+                    setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, sms: l.sms + 1, timeline: [...l.timeline, { type: 'whatsapp', time: new Date(), message: `WhatsApp envoyé: ${msg.substring(0, 60)}...` }] } : l));
+                    showToast('WhatsApp ouvert');
+                    setCommPanel(null);
+                  }}
+                  onClose={() => setCommPanel(null)}
+                />
+              )}
+
+              {/* Communication Panel - Email */}
+              {commPanel === 'email' && (
+                <EmailPanel
+                  lead={selectedLead}
+                  onSend={async (subject, body) => {
+                    const result = await apiPost('/send-email', { to: selectedLead.email, subject, body });
+                    if (result.ok) {
+                      setLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, emails: l.emails + 1, timeline: [...l.timeline, { type: 'email', time: new Date(), message: `Email envoyé: ${subject}` }] } : l));
+                      showToast(`Email envoyé à ${selectedLead.email}`);
+                      setCommPanel(null);
+                    } else {
+                      showToast(result.error || 'Erreur envoi email', 'warning');
+                    }
+                  }}
+                  onClose={() => setCommPanel(null)}
+                />
+              )}
+
+              {/* Assign */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <button style={{ ...S.actionBtnLarge('#1B3A5C'), width: '100%' }} onClick={() => setAssignModalLead(selectedLead)}>
+                  <Icon name="userPlus" size={15} /> Affecter à un conseiller
+                </button>
+              </div>
+
+              {/* Timeline */}
+              <div style={{ marginBottom: '1.2rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Historique</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {selectedLead.timeline.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '0.8rem' }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#2E75B6', marginTop: 4, flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.78rem', color: '#7F8C8D', marginBottom: 2 }}>{formatTimeAgo(item.time)} · {item.type}</div>
+                        <div style={{ fontSize: '0.85rem', background: '#F8F9FA', padding: '0.6rem', borderRadius: 6 }}>{item.message}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <div style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Notes</div>
+                <textarea style={{ width: '100%', padding: '0.6rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', fontFamily: 'inherit', resize: 'vertical', minHeight: 80, outline: 'none' }} defaultValue={selectedLead.notes} placeholder="Ajouter une note..." />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ===== AUTOMATION CONFIG MODAL ===== */}
+      {automationStage && (
+        <AutomationConfigPanel
+          stage={automationStage}
+          automationList={Array.isArray(automations[automationStage]) ? automations[automationStage] : []}
+          onSave={(list) => saveAutomations(automationStage, list)}
+          onClose={() => setAutomationStage(null)}
+        />
+      )}
+
+      {/* ===== ASSIGN MODAL ===== */}
+      {assignModalLead && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setAssignModalLead(null)}>
+          <div className="fade-in" style={{ background: 'white', borderRadius: 12, padding: '1.5rem', width: '90%', maxWidth: 520, boxShadow: '0 10px 40px rgba(0,0,0,0.2)', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem' }}>Affecter le lead</h3>
+            <p style={{ fontSize: '0.88rem', color: '#7F8C8D', marginBottom: '1.2rem' }}>{assignModalLead.name} — {assignModalLead.formation}</p>
+
+            {/* Conseillers existants */}
+            {teamMembers.length > 0 && (
+              <div style={{ marginBottom: '1.2rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Choisir un conseiller</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.8rem' }}>
+                  {teamMembers.map(m => (
+                    <div key={m.id} className="team-card" style={{ textAlign: 'center', padding: '0.8rem', borderRadius: 8, cursor: 'pointer', border: assignModalLead.assignee === m.id ? '2px solid #2E75B6' : '2px solid transparent', transition: 'all 0.2s', background: assignModalLead.assignee === m.id ? '#EBF5FB' : 'white', position: 'relative' }} onClick={() => assignLead(assignModalLead.id, m.id)}>
+                      <button onClick={(e) => { e.stopPropagation(); if (confirm(`Supprimer ${m.name} de l'équipe ?`)) { setTeamMembers(prev => prev.filter(t => t.id !== m.id)); setLeads(prev => prev.map(l => l.assignee === m.id ? { ...l, assignee: null } : l)); showToast(`${m.name} supprimé(e) de l'équipe`); } }} style={{ position: 'absolute', top: 2, right: 2, background: 'none', border: 'none', cursor: 'pointer', color: '#BDC3C7', fontSize: '0.75rem', padding: '2px 5px', borderRadius: 4, zIndex: 1 }} title={`Supprimer ${m.name}`}>✕</button>
+                      <div style={{ ...S.avatar(m.color), width: 44, height: 44, fontSize: '0.85rem', margin: '0 auto 0.4rem' }}>{m.id}</div>
+                      <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{m.name}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#7F8C8D' }}>{m.role}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ajouter un nouveau conseiller */}
+            <AddTeamMemberForm
+              onAdd={(member) => {
+                setTeamMembers(prev => [...prev, member]);
+                assignLead(assignModalLead.id, member.id);
+              }}
+              existingMembers={teamMembers}
+            />
+
+            <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
+              {assignModalLead.assignee && (
+                <button onClick={() => { setLeads(prev => prev.map(l => l.id === assignModalLead.id ? { ...l, assignee: null } : l)); showToast('Assignation retirée'); setAssignModalLead(null); }} style={{ ...S.actionBtnLarge('#E74C3C'), flex: 1 }}>Désaffecter</button>
+              )}
+              <button onClick={() => setAssignModalLead(null)} style={{ ...S.actionBtnLarge('#7F8C8D'), flex: 1 }}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== NEW LEAD MODAL ===== */}
+      {showNewLeadModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowNewLeadModal(false)}>
+          <div className="fade-in" style={{ background: 'white', borderRadius: 12, padding: '1.5rem', width: '90%', maxWidth: 520, boxShadow: '0 10px 40px rgba(0,0,0,0.2)', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '1.2rem' }}>Nouveau Lead</h3>
+            <NewLeadForm onSubmit={addNewLead} onCancel={() => setShowNewLeadModal(false)} />
+          </div>
+        </div>
+      )}
+
+      {/* ===== TOASTS ===== */}
+      <div style={{ position: 'fixed', top: 70, right: 16, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 400, pointerEvents: 'none' }}>
+        {toasts.map(t => (
+          <div key={t.id} className="toast-enter" style={{ background: 'white', borderRadius: 8, padding: '1rem 1.2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 280, pointerEvents: 'auto', borderLeft: `4px solid ${t.type === 'success' ? '#27AE60' : t.type === 'warning' ? '#E67E22' : '#2E75B6'}` }}>
+            <div style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: 2 }}>
+              {t.type === 'success' ? <span style={{ color: '#27AE60' }}>✓</span> : 'ℹ'} {t.type === 'success' ? 'Succès' : 'Information'}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#7F8C8D' }}>{t.msg}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===== SMTP CONFIG CARD =====
+function SmtpConfigCard({ showToast }) {
+  const [smtp, setSmtp] = useState({ host: '', port: 587, user: '', pass: '', fromName: 'Admission Hub' });
+  const [status, setStatus] = useState(null); // null, 'ok', 'error'
+  const [testing, setTesting] = useState(false);
+  const inputStyle = { width: '100%', padding: '0.5rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', outline: 'none' };
+  const labelStyle = { fontSize: '0.72rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3, display: 'block' };
+
+  useEffect(() => {
+    apiFetch('/smtp-config').then(data => {
+      if (data.configured) setStatus('ok');
+    });
+  }, []);
+
+  const presets = [
+    { label: 'Gmail', host: 'smtp.gmail.com', port: 587 },
+    { label: 'Outlook/Office 365', host: 'smtp.office365.com', port: 587 },
+    { label: 'OVH', host: 'ssl0.ovh.net', port: 465 },
+  ];
+
+  return (
+    <div style={{ background: 'white', border: '1px solid #E1E5E8', borderRadius: 12, padding: '1.2rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#2E75B6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="mail" size={18} color="white" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600 }}>Email SMTP</div>
+          <div style={{ fontSize: '0.78rem', color: '#7F8C8D' }}>Pour envoyer des emails depuis l'app</div>
+        </div>
+        <div style={{ padding: '0.3rem 0.8rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600,
+          background: status === 'ok' ? '#E8F5E9' : '#FFF3E0',
+          color: status === 'ok' ? '#388E3C' : '#E65100' }}>
+          {status === 'ok' ? 'Configuré' : 'Non configuré'}
+        </div>
+      </div>
+
+      <div style={{ fontSize: '0.78rem', color: '#7F8C8D', marginBottom: '0.6rem' }}>Presets :</div>
+      <div style={{ display: 'flex', gap: 4, marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {presets.map(p => (
+          <button key={p.label} onClick={() => setSmtp(prev => ({ ...prev, host: p.host, port: p.port }))} style={{ padding: '0.3rem 0.6rem', border: '1px solid #E1E5E8', borderRadius: 20, fontSize: '0.75rem', background: smtp.host === p.host ? '#2E75B6' : 'white', color: smtp.host === p.host ? 'white' : '#2C3E50', cursor: 'pointer' }}>{p.label}</button>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.6rem', marginBottom: '0.6rem' }}>
+        <div><label style={labelStyle}>SERVEUR SMTP</label><input style={inputStyle} value={smtp.host} onChange={e => setSmtp(prev => ({ ...prev, host: e.target.value }))} placeholder="smtp.gmail.com" /></div>
+        <div><label style={labelStyle}>PORT</label><input style={inputStyle} type="number" value={smtp.port} onChange={e => setSmtp(prev => ({ ...prev, port: e.target.value }))} /></div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '0.6rem' }}>
+        <div><label style={labelStyle}>EMAIL / IDENTIFIANT</label><input style={inputStyle} value={smtp.user} onChange={e => setSmtp(prev => ({ ...prev, user: e.target.value }))} onBlur={e => setSmtp(prev => ({ ...prev, user: e.target.value }))} onInput={e => setSmtp(prev => ({ ...prev, user: e.target.value }))} placeholder="admission@ecole.fr" /></div>
+        <div><label style={labelStyle}>MOT DE PASSE / APP PASSWORD</label><input style={inputStyle} type="text" value={smtp.pass} onChange={e => setSmtp(prev => ({ ...prev, pass: e.target.value }))} onBlur={e => setSmtp(prev => ({ ...prev, pass: e.target.value }))} onInput={e => setSmtp(prev => ({ ...prev, pass: e.target.value }))} placeholder="mot de passe app" /></div>
+      </div>
+      <div style={{ marginBottom: '0.8rem' }}>
+        <label style={labelStyle}>NOM EXPÉDITEUR</label>
+        <input style={inputStyle} value={smtp.fromName} onChange={e => setSmtp(prev => ({ ...prev, fromName: e.target.value }))} placeholder="Admission CLEM" />
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button onClick={async () => {
+          await apiPost('/smtp-config', smtp);
+          showToast('Configuration SMTP sauvegardée');
+          setStatus('ok');
+        }} style={{ flex: 1, padding: '0.5rem', border: 'none', borderRadius: 6, background: '#2E75B6', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>Sauvegarder</button>
+        <button onClick={async () => {
+          setTesting(true);
+          await apiPost('/smtp-config', smtp);
+          const r = await apiPost('/smtp-test', {});
+          if (r.ok) { showToast('Connexion SMTP réussie'); setStatus('ok'); }
+          else { showToast('Échec : ' + (r.error || ''), 'warning'); setStatus('error'); }
+          setTesting(false);
+        }} style={{ flex: 1, padding: '0.5rem', border: '1px solid #E1E5E8', borderRadius: 6, background: 'white', color: '#2C3E50', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>
+          {testing ? 'Test...' : 'Tester'}
+        </button>
+      </div>
+
+      {status === 'ok' && (
+        <div style={{ marginTop: '0.6rem', padding: '0.4rem 0.6rem', background: '#E8F5E9', borderRadius: 4, fontSize: '0.78rem', color: '#388E3C' }}>
+          Gmail : utilisez un "Mot de passe d'application" (pas votre mot de passe habituel)
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===== WHATSAPP PANEL =====
+function WhatsAppPanel({ lead, onSend, onClose }) {
+  const templates = [
+    { label: 'Premier contact', msg: `Bonjour ${lead.name.split(' ')[0]},\n\nSuite à votre candidature, je me permets de vous contacter. Êtes-vous disponible pour un échange ?\n\nCordialement` },
+    { label: 'Relance dossier', msg: `Bonjour ${lead.name.split(' ')[0]},\n\nJe reviens vers vous concernant votre dossier de candidature. Avez-vous pu compléter les pièces demandées ?\n\nN'hésitez pas si vous avez des questions.` },
+    { label: 'Invitation RDV', msg: `Bonjour ${lead.name.split(' ')[0]},\n\nNous souhaiterions vous inviter à un entretien d'admission. Quelles sont vos disponibilités cette semaine ?\n\nCordialement` },
+    { label: 'Confirmation admission', msg: `Bonjour ${lead.name.split(' ')[0]},\n\nFélicitations ! Votre admission est validée. Nous allons vous envoyer toutes les informations pour la suite.\n\nBienvenue !` },
+  ];
+  const [message, setMessage] = useState(templates[0].msg);
+  const panelStyle = { background: '#F0FFF0', border: '1px solid #25D366', borderRadius: 8, padding: '1rem', marginBottom: '1rem' };
+
+  return (
+    <div style={panelStyle} className="fade-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#25D366', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="whatsapp" size={18} color="#25D366" /> WhatsApp
+        </div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7F8C8D' }}><Icon name="x" size={16} /></button>
+      </div>
+      <div style={{ fontSize: '0.78rem', color: '#7F8C8D', marginBottom: '0.6rem' }}>Modèles de messages :</div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+        {templates.map((t, i) => (
+          <button key={i} onClick={() => setMessage(t.msg)} style={{ padding: '0.3rem 0.6rem', border: '1px solid #E1E5E8', borderRadius: 20, fontSize: '0.75rem', background: message === t.msg ? '#25D366' : 'white', color: message === t.msg ? 'white' : '#2C3E50', cursor: 'pointer' }}>{t.label}</button>
+        ))}
+      </div>
+      <textarea value={message} onChange={e => setMessage(e.target.value)} style={{ width: '100%', padding: '0.6rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', fontFamily: 'inherit', resize: 'vertical', minHeight: 100, outline: 'none' }} />
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem' }}>
+        <button onClick={() => onSend(message)} style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 6, background: '#25D366', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Ouvrir WhatsApp</button>
+        <button onClick={onClose} style={{ padding: '0.6rem 0.8rem', border: '1px solid #E1E5E8', borderRadius: 6, background: 'white', color: '#7F8C8D', cursor: 'pointer', fontSize: '0.85rem' }}>Annuler</button>
+      </div>
+    </div>
+  );
+}
+
+// ===== EMAIL PANEL =====
+function EmailPanel({ lead, onSend, onClose }) {
+  const templates = [
+    { label: 'Bienvenue', subject: `Bienvenue - Votre candidature ${lead.formation || ''}`, body: `Bonjour ${lead.name.split(' ')[0]},\n\nNous avons bien reçu votre candidature et nous vous en remercions.\n\nUn conseiller admission va prendre contact avec vous dans les plus brefs délais pour vous accompagner dans votre démarche.\n\nCordialement,\nL'équipe Admission` },
+    { label: 'Relance', subject: `Votre dossier de candidature - ${lead.formation || ''}`, body: `Bonjour ${lead.name.split(' ')[0]},\n\nNous revenons vers vous concernant votre dossier de candidature.\n\nIl semblerait que certaines pièces soient encore manquantes. Pourriez-vous les compléter afin que nous puissions poursuivre l'étude de votre dossier ?\n\nNous restons à votre disposition.\n\nCordialement,\nL'équipe Admission` },
+    { label: 'RDV admission', subject: `Invitation entretien d'admission`, body: `Bonjour ${lead.name.split(' ')[0]},\n\nDans le cadre de votre candidature, nous souhaiterions vous proposer un entretien d'admission.\n\nMerci de nous indiquer vos disponibilités.\n\nCordialement,\nL'équipe Admission` },
+    { label: 'Admission validée', subject: `Félicitations - Admission validée !`, body: `Bonjour ${lead.name.split(' ')[0]},\n\nNous avons le plaisir de vous annoncer que votre admission est validée !\n\nVous allez recevoir prochainement toutes les informations nécessaires pour la suite de votre parcours.\n\nBienvenue parmi nous !\n\nCordialement,\nL'équipe Admission` },
+  ];
+  const [subject, setSubject] = useState(templates[0].subject);
+  const [body, setBody] = useState(templates[0].body);
+  const [sending, setSending] = useState(false);
+
+  return (
+    <div style={{ background: '#EBF5FB', border: '1px solid #2E75B6', borderRadius: 8, padding: '1rem', marginBottom: '1rem' }} className="fade-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#2E75B6', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="mail" size={18} color="#2E75B6" /> Envoyer un email
+        </div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7F8C8D' }}><Icon name="x" size={16} /></button>
+      </div>
+      <div style={{ fontSize: '0.78rem', color: '#7F8C8D', marginBottom: '0.6rem' }}>Modèles :</div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+        {templates.map((t, i) => (
+          <button key={i} onClick={() => { setSubject(t.subject); setBody(t.body); }} style={{ padding: '0.3rem 0.6rem', border: '1px solid #E1E5E8', borderRadius: 20, fontSize: '0.75rem', background: subject === t.subject ? '#2E75B6' : 'white', color: subject === t.subject ? 'white' : '#2C3E50', cursor: 'pointer' }}>{t.label}</button>
+        ))}
+      </div>
+      <div style={{ marginBottom: '0.6rem' }}>
+        <div style={{ fontSize: '0.75rem', color: '#7F8C8D', marginBottom: 2 }}>À : {lead.email}</div>
+        <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Objet..." style={{ width: '100%', padding: '0.5rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', outline: 'none', marginBottom: '0.4rem' }} />
+        <textarea value={body} onChange={e => setBody(e.target.value)} style={{ width: '100%', padding: '0.6rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', fontFamily: 'inherit', resize: 'vertical', minHeight: 120, outline: 'none' }} />
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button onClick={() => {
+          const gmailUrl = 'https://mail.google.com/mail/?view=cm' +
+            '&to=' + encodeURIComponent(lead.email) +
+            '&su=' + encodeURIComponent(subject) +
+            '&body=' + encodeURIComponent(body);
+          window.open(gmailUrl, '_blank');
+          onSend(subject, body);
+        }} style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 6, background: '#EA4335', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          Ouvrir dans Gmail
+        </button>
+        <button onClick={onClose} style={{ padding: '0.6rem 0.8rem', border: '1px solid #E1E5E8', borderRadius: 6, background: 'white', color: '#7F8C8D', cursor: 'pointer', fontSize: '0.85rem' }}>Annuler</button>
+      </div>
+    </div>
+  );
+}
+
+// ===== AUTOMATION CONFIG PANEL (multi-automation list) =====
+function AutomationConfigPanel({ stage, automationList, onSave, onClose }) {
+  const [list, setList] = useState(automationList.length > 0 ? automationList : []);
+  const [editingId, setEditingId] = useState(null);
+
+  const emailTemplates = [
+    { label: 'Bienvenue', subject: 'Bienvenue - Votre candidature {{formation}}', body: 'Bonjour {{prenom}},\n\nNous avons bien reçu votre candidature et nous vous en remercions.\n\nUn conseiller admission va prendre contact avec vous dans les plus brefs délais.\n\nCordialement,\nL\'équipe Admission' },
+    { label: 'Relance', subject: 'Votre dossier de candidature - {{formation}}', body: 'Bonjour {{prenom}},\n\nNous revenons vers vous concernant votre dossier de candidature.\n\nIl semblerait que certaines pièces soient encore manquantes. Pourriez-vous les compléter ?\n\nCordialement,\nL\'équipe Admission' },
+    { label: 'RDV admission', subject: 'Invitation entretien d\'admission', body: 'Bonjour {{prenom}},\n\nDans le cadre de votre candidature en {{formation}}, nous souhaiterions vous proposer un entretien d\'admission.\n\nMerci de nous indiquer vos disponibilités.\n\nCordialement,\nL\'équipe Admission' },
+    { label: 'Admission validée', subject: 'Félicitations - Admission validée !', body: 'Bonjour {{prenom}},\n\nNous avons le plaisir de vous annoncer que votre admission en {{formation}} est validée !\n\nVous allez recevoir prochainement toutes les informations pour la suite.\n\nBienvenue parmi nous !\n\nCordialement,\nL\'équipe Admission' },
+  ];
+
+  const waTemplates = [
+    { label: 'Premier contact', message: 'Bonjour {{prenom}} ! Je suis votre conseiller admission pour la formation {{formation}}. N\'hésitez pas si vous avez des questions.' },
+    { label: 'Relance', message: 'Bonjour {{prenom}}, je me permets de revenir vers vous concernant votre candidature en {{formation}}. Avez-vous des questions ?' },
+    { label: 'Rappel RDV', message: 'Bonjour {{prenom}}, petit rappel pour votre entretien d\'admission. A bientôt !' },
+  ];
+
+  const addAutomation = (type) => {
+    const newAuto = {
+      id: genAutoId(),
+      enabled: true,
+      type,
+      delay: { value: 5, unit: 'min' },
+      ...(type === 'email'
+        ? { subject: 'Information - Votre candidature {{formation}}', body: 'Bonjour {{prenom}},\n\nNous vous informons que votre dossier a avancé.\n\nCordialement,\nL\'équipe Admission' }
+        : { message: 'Bonjour {{prenom}} ! Merci pour votre candidature en {{formation}}. N\'hésitez pas si vous avez des questions.' }
+      )
+    };
+    setList(prev => [...prev, newAuto]);
+    setEditingId(newAuto.id);
+  };
+
+  const updateAuto = (id, changes) => {
+    setList(prev => prev.map(a => a.id === id ? { ...a, ...changes } : a));
+  };
+
+  const removeAuto = (id) => {
+    setList(prev => prev.filter(a => a.id !== id));
+    if (editingId === id) setEditingId(null);
+  };
+
+  const toggleEnabled = (id) => {
+    setList(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
+  };
+
+  const formatDelay = (d) => {
+    if (!d || d.value === 0) return 'Immédiat';
+    const u = d.unit === 'min' ? 'min' : d.unit === 'h' ? 'h' : d.unit === 'j' ? 'j' : 'sem';
+    return `${d.value} ${u}`;
+  };
+
+  const labelStyle = { fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, display: 'block' };
+  const inputStyle = { width: '100%', padding: '0.5rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ background: 'white', borderRadius: 12, padding: '1.5rem', width: '90%', maxWidth: 580, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>⚡ Automatisations : {stage}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7F8C8D', fontSize: '1.2rem' }}>✕</button>
+        </div>
+
+        {list.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#7F8C8D', fontSize: '0.88rem' }}>
+            Aucune automatisation configurée pour cette étape.
+          </div>
+        )}
+
+        {/* List of automation cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
+          {list.map((auto, idx) => {
+            const isEditing = editingId === auto.id;
+            const isEmail = auto.type === 'email';
+            const typeColor = isEmail ? '#2E75B6' : '#25D366';
+            const typeBg = isEmail ? '#E3F2FD' : '#E8F5E9';
+            const typeIcon = isEmail ? '✉' : '📱';
+            const typeLabel = isEmail ? 'Email' : 'WhatsApp';
+
+            return (
+              <div key={auto.id} style={{ border: isEditing ? `2px solid ${typeColor}` : '1px solid #E1E5E8', borderRadius: 8, overflow: 'hidden', transition: 'all 0.2s' }}>
+                {/* Card summary row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.7rem 0.8rem', cursor: 'pointer', background: isEditing ? typeBg : 'white' }}
+                  onClick={() => setEditingId(isEditing ? null : auto.id)}>
+                  <span style={{ fontSize: '1rem' }}>{typeIcon}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 600, background: typeBg, color: typeColor }}>{typeLabel}</span>
+                  <span style={{ fontSize: '0.78rem', color: '#7F8C8D' }}>{formatDelay(auto.delay)}</span>
+                  <span style={{ flex: 1, fontSize: '0.8rem', color: '#2C3E50', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {isEmail ? (auto.subject || 'Sans objet') : (auto.message || 'Sans message').substring(0, 40) + ((auto.message || '').length > 40 ? '...' : '')}
+                  </span>
+                  <button onClick={(e) => { e.stopPropagation(); toggleEnabled(auto.id); }}
+                    style={{ width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer', background: auto.enabled ? '#27AE60' : '#BDC3C7', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'white', position: 'absolute', top: 3, left: auto.enabled ? 21 : 3, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }} />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); if (confirm('Supprimer cette automatisation ?')) removeAuto(auto.id); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#BDC3C7', fontSize: '0.85rem', padding: 2, flexShrink: 0 }}
+                    title="Supprimer">✕</button>
+                </div>
+
+                {/* Expanded edit form */}
+                {isEditing && (
+                  <div style={{ padding: '0.8rem', borderTop: '1px solid #E1E5E8', background: '#FAFCFE' }}>
+                    {/* Delay */}
+                    <div style={{ marginBottom: '0.8rem' }}>
+                      <label style={labelStyle}>Délai avant envoi</label>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input type="number" min="0" value={auto.delay.value} onChange={e => updateAuto(auto.id, { delay: { ...auto.delay, value: parseInt(e.target.value) || 0 } })}
+                          style={{ width: 80, padding: '0.5rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.9rem', textAlign: 'center' }} />
+                        <select value={auto.delay.unit} onChange={e => updateAuto(auto.id, { delay: { ...auto.delay, unit: e.target.value } })}
+                          style={{ padding: '0.5rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', background: 'white' }}>
+                          <option value="min">Minutes</option>
+                          <option value="h">Heures</option>
+                          <option value="j">Jours</option>
+                          <option value="sem">Semaines</option>
+                        </select>
+                        <span style={{ fontSize: '0.82rem', color: '#7F8C8D' }}>{formatDelay(auto.delay)}</span>
+                      </div>
+                    </div>
+
+                    {isEmail ? (
+                      <>
+                        {/* Email templates */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <label style={labelStyle}>Modèle</label>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {emailTemplates.map((t, i) => (
+                              <button key={i} onClick={() => updateAuto(auto.id, { subject: t.subject, body: t.body })}
+                                style={{ padding: '0.25rem 0.5rem', border: '1px solid #E1E5E8', borderRadius: 20, fontSize: '0.72rem', background: auto.subject === t.subject ? '#2E75B6' : 'white', color: auto.subject === t.subject ? 'white' : '#2C3E50', cursor: 'pointer' }}>{t.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Subject */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <label style={labelStyle}>Objet</label>
+                          <input value={auto.subject || ''} onChange={e => updateAuto(auto.id, { subject: e.target.value })} style={inputStyle} />
+                        </div>
+                        {/* Body */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <label style={labelStyle}>Corps du message</label>
+                          <textarea value={auto.body || ''} onChange={e => updateAuto(auto.id, { body: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: 100 }} />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* WhatsApp templates */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <label style={labelStyle}>Modèle WhatsApp</label>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                            {waTemplates.map((t, i) => (
+                              <button key={i} onClick={() => updateAuto(auto.id, { message: t.message })}
+                                style={{ padding: '0.25rem 0.5rem', border: '1px solid #E1E5E8', borderRadius: 20, fontSize: '0.72rem', background: auto.message === t.message ? '#25D366' : 'white', color: auto.message === t.message ? 'white' : '#2C3E50', cursor: 'pointer' }}>{t.label}</button>
+                            ))}
+                          </div>
+                        </div>
+                        {/* Message */}
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <label style={labelStyle}>Message WhatsApp</label>
+                          <textarea value={auto.message || ''} onChange={e => updateAuto(auto.id, { message: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Variables */}
+                    <div style={{ padding: '0.5rem', background: '#F8F9FA', borderRadius: 6, marginBottom: '0.4rem' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#7F8C8D', fontWeight: 600, marginBottom: 3 }}>VARIABLES DISPONIBLES</div>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        {['{{prenom}}','{{nom}}','{{formation}}','{{campus}}','{{email}}'].map(v => (
+                          <span key={v} style={{ padding: '2px 6px', background: '#E3F2FD', color: '#2E75B6', borderRadius: 4, fontSize: '0.7rem', fontFamily: 'monospace', cursor: 'pointer' }}
+                            onClick={() => {
+                              if (isEmail) updateAuto(auto.id, { body: (auto.body || '') + ' ' + v });
+                              else updateAuto(auto.id, { message: (auto.message || '') + ' ' + v });
+                            }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Add automation buttons */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+          <button onClick={() => addAutomation('email')}
+            style={{ flex: 1, padding: '0.6rem', border: '2px dashed #2E75B6', borderRadius: 8, background: 'rgba(46,117,182,0.05)', cursor: 'pointer', color: '#2E75B6', fontWeight: 600, fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+            ✉ + Ajouter un Email
+          </button>
+          <button onClick={() => addAutomation('whatsapp')}
+            style={{ flex: 1, padding: '0.6rem', border: '2px dashed #25D366', borderRadius: 8, background: 'rgba(37,211,102,0.05)', cursor: 'pointer', color: '#25D366', fontWeight: 600, fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+            📱 + Ajouter un WhatsApp
+          </button>
+        </div>
+
+        {/* Save/Cancel */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => { onSave(list); onClose(); }}
+            style={{ flex: 1, padding: '0.7rem', border: 'none', borderRadius: 8, background: '#2E75B6', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}>
+            Sauvegarder ({list.filter(a => a.enabled).length} active{list.filter(a => a.enabled).length > 1 ? 's' : ''})
+          </button>
+          <button onClick={onClose} style={{ padding: '0.7rem 1rem', border: '1px solid #E1E5E8', borderRadius: 8, background: 'white', color: '#7F8C8D', cursor: 'pointer', fontSize: '0.88rem' }}>Annuler</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== KANBAN BOARD WITH DRAG & DROP =====
+function KanbanBoard({ statuses, leads, draggedLead, setDraggedLead, dragOverCol, setDragOverCol, onMove, onClickLead, onAddStage, showAddStage, setShowAddStage, newStageName, setNewStageName, onDeleteStage, onRenameStage, onReorderStages, automations, onOpenAutomation, avatarStyle }) {
+  const [renamingCol, setRenamingCol] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  // --- Card drag (move lead between columns) ---
+  const handleDragStart = (e, lead) => {
+    setDraggedLead(lead);
+    e.dataTransfer.setData('type', 'card');
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.style.opacity = '0.5';
+  };
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1';
+    setDraggedLead(null);
+    setDragOverCol(null);
+    setDraggedCol(null);
+    setDragOverColTarget(null);
+  };
+
+  // --- Column drag (reorder stages) ---
+  const [draggedCol, setDraggedCol] = useState(null);
+  const [dragOverColTarget, setDragOverColTarget] = useState(null);
+
+  const handleColDragStart = (e, colName) => {
+    setDraggedCol(colName);
+    e.dataTransfer.setData('type', 'column');
+    e.dataTransfer.effectAllowed = 'move';
+    e.stopPropagation();
+  };
+  const handleColDragOver = (e, colName) => {
+    e.preventDefault();
+    if (draggedCol && draggedCol !== colName) {
+      setDragOverColTarget(colName);
+    } else if (draggedLead) {
+      e.dataTransfer.dropEffect = 'move';
+      setDragOverCol(colName);
+    }
+  };
+  const handleColDrop = (e, colName) => {
+    e.preventDefault();
+    if (draggedCol && draggedCol !== colName) {
+      const oldIdx = statuses.indexOf(draggedCol);
+      const newIdx = statuses.indexOf(colName);
+      if (oldIdx !== -1 && newIdx !== -1) {
+        const newOrder = [...statuses];
+        newOrder.splice(oldIdx, 1);
+        newOrder.splice(newIdx, 0, draggedCol);
+        onReorderStages(newOrder);
+      }
+    } else if (draggedLead && draggedLead.pipelineStatus !== colName) {
+      onMove(draggedLead.id, colName);
+    }
+    setDraggedLead(null);
+    setDragOverCol(null);
+    setDraggedCol(null);
+    setDragOverColTarget(null);
+  };
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Barre d'outils Pipeline */}
+      <div style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.8rem', flexShrink: 0, borderBottom: '1px solid #E1E5E8', background: 'white' }}>
+        <span style={{ fontSize: '0.85rem', color: '#7F8C8D' }}>{statuses.length} étapes</span>
+        <span style={{ fontSize: '0.75rem', color: '#BDC3C7' }}>⋮⋮ Glissez les en-têtes pour réorganiser</span>
+        <div style={{ flex: 1 }} />
+        {!showAddStage ? (
+          <button onClick={() => setShowAddStage(true)} style={{ padding: '0.5rem 1rem', border: '2px dashed #2E75B6', borderRadius: 8, background: 'rgba(46,117,182,0.05)', cursor: 'pointer', color: '#2E75B6', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', transition: 'all 0.2s' }}>
+            <Icon name="plus" size={16} /> Ajouter une étape au pipeline
+          </button>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              autoFocus
+              value={newStageName}
+              onChange={e => setNewStageName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && newStageName.trim()) onAddStage(newStageName); if (e.key === 'Escape') { setShowAddStage(false); setNewStageName(''); } }}
+              placeholder="Nom de la nouvelle étape..."
+              style={{ padding: '0.5rem 0.8rem', border: '2px solid #2E75B6', borderRadius: 8, fontSize: '0.85rem', outline: 'none', width: 220 }}
+            />
+            <button onClick={() => { if (newStageName.trim()) onAddStage(newStageName); }} style={{ padding: '0.5rem 1rem', border: 'none', borderRadius: 8, background: '#2E75B6', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Ajouter</button>
+            <button onClick={() => { setShowAddStage(false); setNewStageName(''); }} style={{ padding: '0.5rem 0.8rem', border: '1px solid #E1E5E8', borderRadius: 8, background: 'white', color: '#7F8C8D', cursor: 'pointer', fontSize: '0.85rem' }}>Annuler</button>
+          </div>
+        )}
+      </div>
+      {/* Colonnes Kanban */}
+      <div style={{ flex: 1, overflowX: 'auto', padding: '1rem 1.5rem', display: 'flex', gap: '0.8rem' }}>
+      {statuses.map(ps => {
+        const colLeads = leads.filter(l => l.pipelineStatus === ps);
+        const isCardOver = dragOverCol === ps && draggedLead;
+        const isColOver = dragOverColTarget === ps && draggedCol;
+        const isBeingDragged = draggedCol === ps;
+        return (
+          <div key={ps}
+            onDragOver={e => handleColDragOver(e, ps)}
+            onDragLeave={() => { setDragOverCol(null); setDragOverColTarget(null); }}
+            onDrop={e => handleColDrop(e, ps)}
+            style={{
+              minWidth: 270,
+              background: isColOver ? '#FFF3E0' : isCardOver ? '#E3F2FD' : '#F8F9FA',
+              borderRadius: 8, padding: '0.8rem', display: 'flex', flexDirection: 'column', maxHeight: '100%',
+              border: isColOver ? '2px dashed #E67E22' : isCardOver ? '2px dashed #2E75B6' : '2px solid transparent',
+              opacity: isBeingDragged ? 0.4 : 1,
+              transition: 'all 0.2s'
+            }}>
+            {/* Column header - draggable for reorder */}
+            <div
+              draggable={renamingCol !== ps}
+              onDragStart={e => { if (renamingCol !== ps) handleColDragStart(e, ps); }}
+              onDragEnd={handleDragEnd}
+              style={{ fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: renamingCol === ps ? 'default' : 'grab', padding: '0.3rem 0.2rem', borderRadius: 6, background: 'rgba(0,0,0,0.02)', userSelect: 'none' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+                <span style={{ color: '#BDC3C7', fontSize: '0.75rem', cursor: 'grab' }}>⋮⋮</span>
+                {renamingCol === ps ? (
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={e => setRenameValue(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && renameValue.trim()) { onRenameStage(ps, renameValue.trim()); setRenamingCol(null); }
+                      if (e.key === 'Escape') setRenamingCol(null);
+                    }}
+                    onBlur={() => { if (renameValue.trim() && renameValue.trim() !== ps) onRenameStage(ps, renameValue.trim()); setRenamingCol(null); }}
+                    onClick={e => e.stopPropagation()}
+                    style={{ padding: '2px 6px', border: '2px solid #2E75B6', borderRadius: 4, fontSize: '0.85rem', fontWeight: 600, outline: 'none', width: '100%', maxWidth: 160 }}
+                  />
+                ) : (
+                  <span onDoubleClick={(e) => { e.stopPropagation(); setRenamingCol(ps); setRenameValue(ps); }} title="Double-clic pour renommer" style={{ cursor: 'text', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ps}</span>
+                )}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <button onClick={(e) => { e.stopPropagation(); onOpenAutomation(ps); }} title="Automatisations" style={{ background: countActiveAutomations(automations, ps) > 0 ? '#FFF3E0' : 'none', border: countActiveAutomations(automations, ps) > 0 ? '1px solid #E67E22' : 'none', cursor: 'pointer', color: countActiveAutomations(automations, ps) > 0 ? '#E67E22' : '#BDC3C7', fontSize: '0.75rem', padding: '2px 4px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  ⚡{countActiveAutomations(automations, ps) > 0 && <span style={{ fontSize: '0.6rem', fontWeight: 700 }}>{countActiveAutomations(automations, ps)}</span>}
+                </button>
+                <div style={{ background: '#2E75B6', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700 }}>{colLeads.length}</div>
+                <button onClick={(e) => {
+                  e.stopPropagation();
+                  if (colLeads.length > 0) {
+                    if (confirm(`Supprimer "${ps}" ? Les ${colLeads.length} fiche(s) seront déplacées vers "${statuses[0]}".`)) {
+                      onDeleteStage(ps, statuses[0]);
+                    }
+                  } else {
+                    onDeleteStage(ps);
+                  }
+                }} title="Supprimer cette étape" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#BDC3C7', fontSize: '0.8rem', padding: 2 }}>
+                  <Icon name="x" size={14} />
+                </button>
+              </div>
+            </div>
+            {/* Cards area */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', minHeight: 60 }}>
+              {colLeads.map(l => (
+                <div key={l.id}
+                  draggable
+                  onDragStart={e => { e.stopPropagation(); handleDragStart(e, l); }}
+                  onDragEnd={handleDragEnd}
+                  className="kanban-card"
+                  style={{
+                    background: 'white', borderRadius: 8, padding: '0.7rem',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)', cursor: 'grab',
+                    transition: 'all 0.15s',
+                    borderLeft: l.school ? `3px solid ${l.school === 'clem' ? '#1B3A5C' : '#DDDF4B'}` : '3px solid #2E75B6'
+                  }}
+                  onClick={() => onClickLead(l)}>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {l.name}
+                    {l.school && <span style={{ fontSize: '0.6rem', padding: '1px 4px', borderRadius: 3, background: l.school === 'clem' ? '#1B3A5C' : '#DDDF4B', color: 'white', fontWeight: 600 }}>{l.school === 'clem' ? 'NS' : 'WS'}</span>}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#7F8C8D', marginBottom: 4 }}>{l.formation}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#7F8C8D' }}>
+                    <span style={{ ...statusColor(l.status), padding: '1px 6px', borderRadius: 10, fontSize: '0.68rem', fontWeight: 600, display: 'inline-block' }}>{l.status.split(' - ')[0]}</span>
+                    <span>{formatTimeAgo(l.createdAt)}</span>
+                  </div>
+                </div>
+              ))}
+              {colLeads.length === 0 && !draggedLead && !draggedCol && (
+                <div style={{ textAlign: 'center', color: '#BDC3C7', fontSize: '0.8rem', padding: '1.5rem 0' }}>
+                  Glissez un lead ici
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      </div>
+    </div>
+  );
+}
+
+// ===== ADD TEAM MEMBER FORM =====
+function AddTeamMemberForm({ onAdd, existingMembers }) {
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('Conseiller Admission');
+  const inputStyle = { width: '100%', padding: '0.6rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', fontFamily: 'inherit', outline: 'none' };
+  const labelStyle = { fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, display: 'block' };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    const parts = name.trim().split(' ');
+    const initials = parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : name.trim().substring(0, 2).toUpperCase();
+    const color = teamColors[(existingMembers.length) % teamColors.length];
+    onAdd({ id: initials, name: name.trim(), role, color });
+    setName('');
+    setRole('Conseiller Admission');
+    setShowForm(false);
+  };
+
+  if (!showForm) {
+    return (
+      <div style={{ border: '2px dashed #E1E5E8', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
+        <button onClick={() => setShowForm(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2E75B6', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: '0 auto' }}>
+          <Icon name="plus" size={16} /> Ajouter un nouveau conseiller
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ border: '1px solid #2E75B6', borderRadius: 8, padding: '1rem', background: '#FAFCFE' }}>
+      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#2E75B6', marginBottom: '0.8rem' }}>Nouveau conseiller</div>
+      <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '0.8rem' }}>
+        <div style={{ flex: 2 }}>
+          <label style={labelStyle}>Nom complet *</label>
+          <input style={inputStyle} value={name} onChange={e => setName(e.target.value)} placeholder="Prénom Nom" required autoFocus />
+        </div>
+        <div style={{ flex: 2 }}>
+          <label style={labelStyle}>Rôle</label>
+          <select style={{ ...inputStyle, cursor: 'pointer' }} value={role} onChange={e => setRole(e.target.value)}>
+            <option>Conseiller Admission</option>
+            <option>Conseillère Admission</option>
+            <option>Responsable Admission</option>
+            <option>Directeur Commercial</option>
+            <option>Assistant Admission</option>
+          </select>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button type="submit" style={{ flex: 1, padding: '0.5rem', border: 'none', borderRadius: 6, background: '#2E75B6', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>Ajouter et affecter</button>
+        <button type="button" onClick={() => setShowForm(false)} style={{ padding: '0.5rem 0.8rem', border: '1px solid #E1E5E8', borderRadius: 6, background: 'white', color: '#7F8C8D', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
+      </div>
+    </form>
+  );
+}
+
+// ===== CRM CONFIG CARD =====
+function CrmConfigCard({ title, subtitle, color, logoText, school, status, dashboard, onSave, onTest }) {
+  const [cookie, setCookie] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const inputStyle = { width: '100%', padding: '0.6rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.82rem', fontFamily: 'monospace', outline: 'none' };
+
+  return (
+    <div style={{ background: 'white', border: '1px solid #E1E5E8', borderRadius: 12, padding: '1.5rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ width: 44, height: 44, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '1rem' }}>{logoText}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{title}</div>
+          <div style={{ fontSize: '0.82rem', color: '#7F8C8D' }}>{subtitle}</div>
+        </div>
+        <div style={{ padding: '0.3rem 0.8rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600,
+          background: status?.connected ? '#E8F5E9' : '#FFF3E0',
+          color: status?.connected ? '#388E3C' : '#E65100' }}>
+          {status?.connected ? 'Connecté' : 'Non connecté'}
+        </div>
+      </div>
+
+      {/* Dashboard preview if connected */}
+      {dashboard?.kpis && Object.keys(dashboard.kpis).length > 0 && (
+        <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {Object.entries(dashboard.kpis).map(([k, v]) => (
+            <div key={k} style={{ background: '#F8F9FA', borderRadius: 6, padding: '0.5rem 0.8rem', fontSize: '0.82rem' }}>
+              <span style={{ color: '#7F8C8D' }}>{k}: </span><strong>{v}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ marginBottom: '0.8rem' }}>
+        <label style={{ fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, display: 'block', marginBottom: 4 }}>COOKIE DE SESSION</label>
+        <textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} value={cookie} onChange={e => setCookie(e.target.value)} placeholder="Collez le cookie de session ici..." />
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.8rem' }}>
+        <button onClick={async () => { await onSave(cookie); setCookie(''); }} disabled={!cookie}
+          style={{ flex: 1, padding: '0.6rem', border: 'none', borderRadius: 6, background: cookie ? color : '#BDC3C7', color: 'white', fontWeight: 600, cursor: cookie ? 'pointer' : 'default', fontSize: '0.85rem' }}>
+          Sauvegarder
+        </button>
+        <button onClick={async () => {
+            setTesting(true);
+            const r = await onTest();
+            setTestResult(r);
+            setTesting(false);
+          }}
+          style={{ flex: 1, padding: '0.6rem', border: '1px solid #E1E5E8', borderRadius: 6, background: 'white', color: '#2C3E50', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+          {testing ? 'Test en cours...' : 'Tester la connexion'}
+        </button>
+      </div>
+
+      {testResult && (
+        <div style={{ marginTop: '0.8rem', padding: '0.6rem', borderRadius: 6, fontSize: '0.82rem',
+          background: testResult.connected ? '#E8F5E9' : '#FFEBEE',
+          color: testResult.connected ? '#388E3C' : '#C62828' }}>
+          {testResult.connected ? 'Connexion réussie !' : `Échec : ${testResult.error || 'Session expirée'}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===== NEW LEAD FORM =====
+function NewLeadForm({ onSubmit, onCancel }) {
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', formation: formations[0], campus: 'Bordeaux', source: sources[0], status: 'Prospect' });
+  const update = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+  const inputStyle = { width: '100%', padding: '0.6rem', border: '1px solid #E1E5E8', borderRadius: 6, fontSize: '0.85rem', fontFamily: 'inherit', outline: 'none' };
+  const labelStyle = { fontSize: '0.78rem', color: '#7F8C8D', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, display: 'block' };
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); if (form.firstName && form.lastName && form.email) { const merged = { ...form, name: form.firstName + ' ' + form.lastName }; onSubmit(merged); } }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div>
+          <label style={labelStyle}>Prénom *</label>
+          <input style={inputStyle} value={form.firstName} onChange={e => update('firstName', e.target.value)} placeholder="Jean" required />
+        </div>
+        <div>
+          <label style={labelStyle}>Nom *</label>
+          <input style={inputStyle} value={form.lastName} onChange={e => update('lastName', e.target.value)} placeholder="Dupont" required />
+        </div>
+      </div>
+      <div>
+        <label style={labelStyle}>Email *</label>
+        <input style={inputStyle} type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="jean@email.com" required />
+      </div>
+      <div>
+        <label style={labelStyle}>Téléphone</label>
+        <input style={inputStyle} value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="06 12 34 56 78" />
+      </div>
+      <div>
+        <label style={labelStyle}>Formation</label>
+        <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.formation} onChange={e => update('formation', e.target.value)}>
+          {formations.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div>
+          <label style={labelStyle}>Campus</label>
+          <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.campus} onChange={e => update('campus', e.target.value)}>
+            <option value="Bordeaux">Bordeaux</option>
+            <option value="Mont de Marsan">Mont de Marsan</option>
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>Source</label>
+          <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.source} onChange={e => update('source', e.target.value)}>
+            {sources.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.5rem' }}>
+        <button type="submit" style={{ flex: 1, padding: '0.7rem', border: 'none', borderRadius: 8, background: '#2E75B6', color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>Ajouter le lead</button>
+        <button type="button" onClick={onCancel} style={{ flex: 1, padding: '0.7rem', border: '1px solid #E1E5E8', borderRadius: 8, background: 'white', color: '#7F8C8D', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>Annuler</button>
+      </div>
+    </form>
+  );
+}
+
+// ===== RENDER =====
+ReactDOM.createRoot(document.getElementById('root')).render(<AdmissionHub />);
+</script>
+</body>
+</html>

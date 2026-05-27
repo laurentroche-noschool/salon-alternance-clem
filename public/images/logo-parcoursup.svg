@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 90" width="440" height="90">
+  <!-- Crochet rouge (haut gauche) -->
+  <rect x="4"  y="5"  width="38" height="12" rx="2" ry="2" fill="#E5332A"/>
+  <rect x="30" y="5"  width="12" height="34" rx="2" ry="2" fill="#E5332A"/>
+  <!-- Crochet bleu marine (bas) -->
+  <rect x="8"  y="45" width="12" height="34" rx="2" ry="2" fill="#1E2B6B"/>
+  <rect x="8"  y="67" width="38" height="12" rx="2" ry="2" fill="#1E2B6B"/>
+
+  <!-- Texte principal tout en bleu marine -->
+  <text x="58" y="68" font-family="'Arial Rounded MT Bold', 'Helvetica Rounded', 'Nunito', 'Segoe UI', Arial, sans-serif" font-size="56" font-weight="900" fill="#1E2B6B" letter-spacing="-1">parcoursup</text>
+</svg>

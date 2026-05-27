@@ -1,0 +1,95 @@
+name: Deploy VPS Parcoursup
+
+# Déploiement automatique sur le VPS OVH à chaque push sur la branche de travail
+# ou sur main. Utilise les secrets GitHub : VPS_HOST, VPS_USER, VPS_PASSWORD.
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test connexion SSH minimal
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          timeout: 30s
+          command_timeout: 30s
+          script: |
+            echo "=== Connexion SSH OK ==="
+            whoami
+            pwd
+            hostname
+            sudo -n true && echo "SUDO NOPASSWD : OK" || echo "SUDO requiert mot de passe - PROBLEME"
+
+      - name: Déploiement complet
+        if: success()
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          timeout: 30s
+          command_timeout: 5m
+          envs: GITHUB_REF_NAME
+          script_stop: false
+          script: |
+            BRANCH="${GITHUB_REF_NAME:-main}"
+            echo "=== Deploiement branche : $BRANCH ==="
+
+            cd /opt/salon-alternance-clem || { echo "ECHEC cd /opt/salon-alternance-clem"; exit 1; }
+            echo "CWD : $(pwd)"
+
+            # 1. Sauvegarde des fichiers data (gitignores mais precieux)
+            sudo cp data/parcoursup-candidates.json /tmp/cand.bak 2>/dev/null || true
+            sudo cp data/parcoursup-config.json /tmp/cfg.bak 2>/dev/null || true
+            sudo cp data/parcoursup-relances.json /tmp/rel.bak 2>/dev/null || true
+            sudo cp data/parcoursup-queue.json /tmp/queue.bak 2>/dev/null || true
+            echo "[1/6] Backup data : OK"
+
+            # 2. Clean + fetch + checkout + reset dur
+            sudo git stash -u 2>/dev/null || true
+            sudo git fetch origin || { echo "[2/6] git fetch ECHEC"; exit 1; }
+            sudo git checkout "$BRANCH" 2>/dev/null || sudo git checkout -b "$BRANCH" "origin/$BRANCH"
+            sudo git reset --hard "origin/$BRANCH" || { echo "[2/6] git reset ECHEC"; exit 1; }
+            echo "[2/6] Git a jour : $(sudo git rev-parse --short HEAD)"
+
+            # 3. Restaure les data
+            sudo cp /tmp/cand.bak data/parcoursup-candidates.json 2>/dev/null || true
+            sudo cp /tmp/cfg.bak data/parcoursup-config.json 2>/dev/null || true
+            sudo cp /tmp/rel.bak data/parcoursup-relances.json 2>/dev/null || true
+            sudo cp /tmp/queue.bak data/parcoursup-queue.json 2>/dev/null || true
+            echo "[3/6] Restore data : OK"
+
+            # 4. npm install si package.json a change
+            if sudo git diff HEAD@{1} HEAD --name-only 2>/dev/null | grep -q package.json; then
+              echo "[4/6] package.json modifie, npm install..."
+              sudo npm install --no-audit --no-fund 2>&1 | tail -3 || true
+            else
+              echo "[4/6] package.json inchange, skip npm install"
+            fi
+
+            # 5. Redemarre le service
+            sudo systemctl restart parcoursup-clem || { echo "[5/6] systemctl restart ECHEC"; exit 1; }
+            echo "[5/6] Restart OK, attente 5s..."
+            sleep 5
+
+            # 6. Verifie que le service repond
+            HEALTH=$(curl -sf --max-time 10 http://localhost:3012/health || echo "FAIL")
+            if echo "$HEALTH" | grep -q '"status":"ok"'; then
+              echo "[6/6] === DEPLOYED OK ==="
+              echo "$HEALTH"
+            else
+              echo "[6/6] === ECHEC : service ne repond pas ==="
+              sudo systemctl status parcoursup-clem --no-pager 2>&1 | head -30
+              sudo journalctl -u parcoursup-clem --no-pager -n 30 2>&1 || true
+              exit 1
+            fi

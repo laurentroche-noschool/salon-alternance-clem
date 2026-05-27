@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <circle cx="100" cy="100" r="96" fill="white" stroke="#d0d0d0" stroke-width="2"/>
+  <!-- Bench icon -->
+  <rect x="62" y="78" width="76" height="6" rx="2" fill="#222" />
+  <rect x="68" y="84" width="8" height="18" rx="2" fill="#222"/>
+  <rect x="124" y="84" width="8" height="18" rx="2" fill="#222"/>
+  <!-- PANCA text -->
+  <text x="100" y="136" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#222" text-anchor="middle" letter-spacing="4">PANCA</text>
+</svg>

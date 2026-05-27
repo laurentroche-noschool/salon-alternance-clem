@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["admission-server.js"],
+      "port": 3001
+    },
+    {
+      "name": "parcoursup",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["parcoursup-server.js"],
+      "port": 3002
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <circle cx="60" cy="60" r="58" fill="#111" stroke="#333" stroke-width="2"/>
+  <circle cx="60" cy="60" r="50" fill="none" stroke="#e8c84a" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="60" y="50" font-family="Arial Black,sans-serif" font-weight="900" font-size="18" fill="#e63030" text-anchor="middle" letter-spacing="1">PIZZA</text>
+  <text x="60" y="72" font-family="Georgia,serif" font-style="italic" font-size="22" fill="white" text-anchor="middle">Milano</text>
+  <text x="60" y="88" font-family="Arial,sans-serif" font-size="7" fill="#aaa" text-anchor="middle" letter-spacing="1">LA PIZZA FRAÎCHE LIVRÉE</text>
+</svg>

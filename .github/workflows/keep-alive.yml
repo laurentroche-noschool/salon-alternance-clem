@@ -1,0 +1,41 @@
+name: Keep Alive – Ping Render
+
+on:
+  schedule:
+    # Toutes les 10 minutes, 24h/24, 7j/7
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # possibilité de lancer manuellement
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping salon-alternance
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://salon-alternance.onrender.com/health)
+          echo "Statut HTTP salon-alternance : $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Avertissement : salon-alternance a répondu $STATUS"
+          else
+            echo "salon-alternance actif ✓"
+          fi
+
+      - name: Ping parcoursup-crm
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://parcoursup-crm.onrender.com/health)
+          echo "Statut HTTP parcoursup-crm : $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Avertissement : parcoursup-crm a répondu $STATUS"
+          else
+            echo "parcoursup-crm actif ✓"
+          fi
+
+      - name: Ping jobs-dating-mdm
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://jobs-dating-mdm.onrender.com/api/config)
+          echo "Statut HTTP jobs-dating-mdm : $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Avertissement : jobs-dating-mdm a répondu $STATUS"
+          else
+            echo "jobs-dating-mdm actif ✓"
+          fi

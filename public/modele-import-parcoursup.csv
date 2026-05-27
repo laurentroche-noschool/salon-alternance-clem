@@ -1,0 +1,6 @@
+Nom;Prenom;N° Candidat;Genre;Date de naissance;Telephone;Email;Adresse postale;Code postal;Ville;Ecole;Formation;Charge admission;Conseiller formation
+DUPONT;Marie;123456;F;2007-05-15;0612345678;marie.dupont@gmail.com;12 rue de la Paix;33000;Bordeaux;NOSCHOOL;BTS MCO;Cécilia;Alexandra
+MARTIN;Lucas;234567;G;2006-11-22;0698765432;lucas.martin@hotmail.fr;45 avenue des Lilas;33300;Bordeaux;WILL.SCHOOL;BTS ESF;Lisa;Camille
+BERNARD;Emma;345678;F;2007-03-08;0654321098;emma.bernard@yahoo.fr;8 place de la Mairie;40000;Mont de Marsan;NOSCHOOL MDM;BTS GPME;Mathis;Arnaud
+PETIT;Hugo;456789;G;2006-09-30;0676543210;hugo.petit@gmail.com;23 boulevard Victor Hugo;33300;Bordeaux;WILL.SCHOOL;BTS SP3S;Léo;Hugo
+LEROY;Chloé;567890;F;2007-01-12;0687654321;chloe.leroy@outlook.fr;5 cours du Maréchal Foch;33000;Bordeaux;NOSCHOOL;BTS TOURISME;Peyo;Annick

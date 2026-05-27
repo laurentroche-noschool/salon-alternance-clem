@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<!-- Dashboard Cockpit - Centre de Pilotage - CLEM & CLEM -->
+<html lang="fr" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Language" content="fr">
+<title>Centre de Pilotage - CLEM & CLEM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ============================================================
+   COCKPIT DASHBOARD - CENTRE DE PILOTAGE
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1425;
+  --bg-panel: rgba(15, 20, 40, 0.85);
+  --bg-panel-hover: rgba(20, 28, 55, 0.95);
+  --border-color: rgba(0, 212, 255, 0.15);
+  --border-glow: rgba(0, 212, 255, 0.4);
+  --cyan: #00d4ff;
+  --cyan-dim: rgba(0, 212, 255, 0.3);
+  --amber: #ff8c00;
+  --amber-dim: rgba(255, 140, 0, 0.3);
+  --green: #00ff88;
+  --green-dim: rgba(0, 255, 136, 0.3);
+  --red: #ff3366;
+  --red-dim: rgba(255, 51, 102, 0.3);
+  --white: #e8edf5;
+  --white-dim: rgba(232, 237, 245, 0.6);
+  --will-color: #ff0066;
+  --clem-color: #00d4ff;
+  --text-primary: #e8edf5;
+  --text-secondary: rgba(232, 237, 245, 0.55);
+  --font-hud: 'Orbitron', monospace;
+  --font-data: 'Inter', sans-serif;
+}
+
+html { font-size: 14px; }
+
+body {
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.015) 2px, rgba(0,212,255,0.015) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(0,212,255,0.02) 60px, rgba(0,212,255,0.02) 61px),
+    repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(0,212,255,0.02) 60px, rgba(0,212,255,0.02) 61px),
+    radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(255,0,102,0.04) 0%, transparent 50%),
+    var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Scanline/grid effect baked into body background */
+
+/* ============ TOP BAR - FLIGHT DECK ============ */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  background: linear-gradient(180deg, rgba(10,14,26,0.98) 0%, rgba(15,20,37,0.95) 100%);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(0,212,255,0.08);
+}
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.logo-icon {
+  font-size: 1.4rem;
+  color: var(--cyan);
+  text-shadow: 0 0 6px rgba(0,212,255,0.5);
+}
+.logo-title {
+  font-family: var(--font-hud);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--cyan), #80eaff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.logo-sub {
+  font-family: var(--font-data);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: -2px;
+}
+
+/* Clock */
+.clock-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.clock-time {
+  font-family: var(--font-hud);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 4px;
+  text-shadow: 0 0 12px rgba(0,212,255,0.5);
+}
+.clock-date {
+  font-family: var(--font-data);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Status & live indicator */
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-hud);
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--green);
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green), 0 0 20px rgba(0,255,136,0.3);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+.last-update {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+
+/* View Switcher Tabs */
+.view-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+}
+.view-tab {
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  padding: 7px 14px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.view-tab:hover {
+  color: var(--text-primary);
+  background: rgba(0,212,255,0.08);
+}
+.view-tab.active {
+  background: rgba(0,212,255,0.15);
+  color: var(--cyan);
+  box-shadow: 0 0 10px rgba(0,212,255,0.15), inset 0 0 10px rgba(0,212,255,0.05);
+  border: 1px solid rgba(0,212,255,0.25);
+}
+
+/* ============ MAIN CONTENT ============ */
+.dashboard {
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+}
+
+/* Section titles */
+.section-title {
+  font-family: var(--font-hud);
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0,212,255,0.4);
+  border-radius: 2px;
+}
+.section-title i {
+  color: var(--cyan);
+  font-size: 0.75rem;
+}
+
+/* ============ GAUGES ROW ============ */
+.gauges-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.gauge-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.gauge-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: 0 0 25px rgba(0,212,255,0.08);
+}
+.gauge-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.5;
+}
+.gauge-svg-wrap {
+  position: relative;
+  width: 170px;
+  height: 170px;
+}
+.gauge-svg {
+  width: 100%;
+  height: 100%;
+}
+.gauge-center-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.gauge-number {
+  font-family: var(--font-hud);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.gauge-pct {
+  font-family: var(--font-hud);
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-top: 2px;
+}
+.gauge-label {
+  font-family: var(--font-hud);
+  font-size: 0.65rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-top: 10px;
+}
+.gauge-obj {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.gauge-obj span {
+  color: var(--cyan);
+  font-weight: 600;
+}
+.gauge-month {
+  font-size: 0.6rem;
+  color: var(--amber);
+  margin-top: 2px;
+}
+
+/* ============ SECONDARY STATS ROW ============ */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-mini {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.3s;
+}
+.stat-mini:hover { border-color: var(--border-glow); }
+.stat-mini-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.stat-mini-data { display: flex; flex-direction: column; }
+.stat-mini-value {
+  font-family: var(--font-hud);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.stat-mini-label {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 1px;
+}
+
+/* ============ FORMATION TABLE ============ */
+.table-section {
+  margin-bottom: 24px;
+}
+.cockpit-table-wrap {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cockpit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.cockpit-table thead th {
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(0,0,0,0.2);
+  white-space: nowrap;
+}
+.cockpit-table thead th:first-child { padding-left: 20px; }
+.cockpit-table tbody tr {
+  border-bottom: 1px solid rgba(0,212,255,0.06);
+  transition: background 0.2s;
+}
+.cockpit-table tbody tr:hover {
+  background: rgba(0,212,255,0.04);
+}
+.cockpit-table tbody tr:last-child { border-bottom: none; }
+.cockpit-table td {
+  padding: 11px 14px;
+  vertical-align: middle;
+}
+.cockpit-table td:first-child {
+  padding-left: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.cell-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cell-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 50px;
+}
+.cell-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1.5s ease;
+  width: 0;
+}
+.cell-num {
+  font-family: var(--font-hud);
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 28px;
+  text-align: right;
+}
+.school-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ============ BOTTOM ROW: FUNNEL + ACTIONS ============ */
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.4;
+}
+.panel-title {
+  font-family: var(--font-hud);
+  font-size: 0.65rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-title i { color: var(--cyan); }
+
+/* Funnel */
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.funnel-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+.funnel-bar-wrap {
+  flex: 1;
+  position: relative;
+}
+.funnel-bar {
+  height: 34px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 14px;
+  position: relative;
+  transition: width 1.5s ease;
+  width: 0;
+}
+.funnel-bar-value {
+  font-family: var(--font-hud);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 1;
+}
+.funnel-label {
+  font-family: var(--font-hud);
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  min-width: 100px;
+  text-align: right;
+}
+.funnel-arrow {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  transform: translateX(-50%);
+  color: var(--cyan-dim);
+  font-size: 0.6rem;
+  z-index: 2;
+}
+
+/* Actions Panel */
+.actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.3s;
+}
+.action-item:hover {
+  border-color: var(--border-color);
+  background: rgba(0,212,255,0.03);
+}
+.action-item.alert { border-left: 3px solid var(--red); }
+.action-item.warning { border-left: 3px solid var(--amber); }
+.action-item.info { border-left: 3px solid var(--cyan); }
+.action-item.ok { border-left: 3px solid var(--green); }
+.action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+.action-data { display: flex; flex-direction: column; }
+.action-value {
+  font-family: var(--font-hud);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.action-label {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============ SCHOOL HEADER for individual views ============ */
+.school-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+.school-header-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.school-header-name {
+  font-family: var(--font-hud);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.school-header-stats {
+  display: flex;
+  gap: 24px;
+  margin-left: auto;
+}
+.school-header-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.school-header-stat-val {
+  font-family: var(--font-hud);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.school-header-stat-lbl {
+  font-size: 0.55rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ============ ANIMATIONS ============ */
+@keyframes gauge-glow {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fade-in-up 0.6s ease forwards;
+  opacity: 0;
+}
+.animate-in:nth-child(1) { animation-delay: 0.05s; }
+.animate-in:nth-child(2) { animation-delay: 0.1s; }
+.animate-in:nth-child(3) { animation-delay: 0.15s; }
+.animate-in:nth-child(4) { animation-delay: 0.2s; }
+.animate-in:nth-child(5) { animation-delay: 0.25s; }
+.animate-in:nth-child(6) { animation-delay: 0.3s; }
+/* Ensure animation always completes even if off-screen */
+.animate-in { animation-fill-mode: forwards; }
+
+/* Refresh glow */
+@keyframes refresh-glow {
+  0% { box-shadow: 0 0 0 0 rgba(0,212,255,0.3); }
+  50% { box-shadow: 0 0 15px 2px rgba(0,212,255,0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(0,212,255,0.3); }
+}
+.data-refresh { animation: refresh-glow 1s ease; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1400px) {
+  .gauges-row { grid-template-columns: repeat(2, 1fr); }
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1024px) {
+  .top-bar { flex-wrap: wrap; height: auto; padding: 10px 16px; gap: 10px; }
+  .bottom-row { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .gauges-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .gauges-row { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr; }
+  .view-tabs { flex-wrap: wrap; }
+  .actions-grid { grid-template-columns: 1fr; }
+}
+
+/* ============ EXPANDABLE ROWS ============ */
+.filiere-row.expandable:hover { background: rgba(0,212,255,0.04); }
+.filiere-row.expandable td:first-child { cursor: pointer; }
+.filiere-row.expanded .expand-icon { transform: rotate(90deg); }
+.sub-row { background: rgba(0,212,255,0.02); }
+.sub-row td { border-bottom: 1px solid rgba(0,212,255,0.05) !important; }
+
+/* ============ TOOLTIP ============ */
+.tooltip-wrap {
+  position: relative;
+}
+.tooltip-content {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,14,26,0.96);
+  border: 1px solid var(--border-glow);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.7rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  z-index: 50;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.tooltip-wrap:hover .tooltip-content { display: block; }
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 0;
+}
+.tooltip-row-label { color: var(--text-secondary); }
+.tooltip-row-value { font-weight: 600; }
+
+/* CLEM MDM view - reuse clem styles */
+</style>
+</head>
+<body>
+
+<!-- ======== TOP BAR ======== -->
+<header class="top-bar">
+  <div class="top-bar-left">
+    <i class="fa-solid fa-plane logo-icon"></i>
+    <div>
+      <div class="logo-title">Centre de Pilotage</div>
+      <div class="logo-sub">CLEM & CLEM</div>
+    </div>
+  </div>
+
+  <div class="view-tabs">
+    <button class="view-tab active" data-view="group">Vue Groupe</button>
+    <button class="view-tab" data-view="will">CLEM</button>
+    <button class="view-tab" data-view="clem">CLEM</button>
+    <button class="view-tab" data-view="clemMdm">CLEM MDM</button>
+  </div>
+
+  <div class="clock-block">
+    <div class="clock-time" id="clock-time">--:--:--</div>
+    <div class="clock-date" id="clock-date">--</div>
+  </div>
+
+  <div class="top-bar-right">
+    <div class="live-indicator">
+      <span class="live-dot"></span>
+      DONNEES LIVE
+    </div>
+    <div class="last-update" id="last-update">Mise a jour: --</div>
+  </div>
+</header>
+
+<!-- ======== DASHBOARD CONTENT ======== -->
+<main class="dashboard" id="dashboard">
+  <!-- Content rendered by JS -->
+</main>
+
+<script>
+// ============================================================
+// Dashboard Cockpit - Centre de Pilotage - CLEM & CLEM
+// ============================================================
+
+// Catalogue complet des formations avec couts moyens (source: liste formation et cout.xlsx)
+const formationsCatalogue = {
+  // BTS
+  "BTS Assurance 1": { prix: 5390, clem: true, mdm: false, will: false },
+  "BTS Assurance 2": { prix: 4690, clem: true, mdm: false, will: false },
+  "BTS Banque 1": { prix: 5390, clem: true, mdm: false, will: false },
+  "BTS Banque 2": { prix: 5640, clem: true, mdm: false, will: false },
+  "BTS MCO 1": { prix: 5390, clem: true, mdm: true, will: true },
+  "BTS MCO 2": { prix: 4760, clem: true, mdm: true, will: true },
+  "BTS NDRC 1": { prix: 5390, clem: true, mdm: true, will: true },
+  "BTS NDRC 2": { prix: 5500, clem: true, mdm: false, will: false },
+  "BTS GPME 1": { prix: 5390, clem: true, mdm: false, will: true },
+  "BTS GPME 2": { prix: 5500, clem: true, mdm: true, will: false },
+  "BTS Immobilier 1": { prix: 5390, clem: true, mdm: false, will: false },
+  "BTS Immobilier 2": { prix: 5500, clem: true, mdm: false, will: false },
+  "BTS Communication 1": { prix: 5390, clem: true, mdm: true, will: true },
+  "BTS Communication 2": { prix: 4800, clem: false, mdm: false, will: true },
+  "BTS Compta 1": { prix: 5390, clem: true, mdm: false, will: false },
+  "BTS SAM 1": { prix: 5390, clem: true, mdm: false, will: false },
+  "BTS Tourisme 1": { prix: 5390, clem: true, mdm: false, will: false },
+  "BTS Tourisme 2": { prix: 5500, clem: true, mdm: false, will: false },
+  "BTS ESF 1": { prix: 6300, clem: false, mdm: false, will: true },
+  "BTS ESF 2": { prix: 4830, clem: false, mdm: false, will: true },
+  "BTS SP3S 1": { prix: 6300, clem: false, mdm: false, will: true },
+  "BTS SP3S 2": { prix: 4830, clem: false, mdm: false, will: true },
+  // TP
+  "TP NTC": { prix: 3300, clem: true, mdm: true, will: false },
+  "TP MUM": { prix: 3300, clem: false, mdm: false, will: true },
+  "TP Assistant Immobilier": { prix: 3300, clem: true, mdm: false, will: false },
+  "TP Secretaire Assistant": { prix: 3300, clem: true, mdm: false, will: false },
+  "Collaborateur Paie": { prix: 3300, clem: false, mdm: false, will: true },
+  "Collaborateur Comptable": { prix: 4000, clem: true, mdm: false, will: false },
+  // Bachelors
+  "Bachelor Tourisme Evenementiel": { prix: 4620, clem: true, mdm: false, will: false },
+  "Bachelor Office Manager": { prix: 4620, clem: true, mdm: false, will: false },
+  "Bachelor Community Manager": { prix: 4620, clem: false, mdm: false, will: true },
+  "Bachelor Marketing Pub en ligne": { prix: 4620, clem: false, mdm: false, will: true },
+  "Bachelor Business Developer": { prix: 3850, clem: true, mdm: true, will: true },
+  "Bachelor Business Developer IA": { prix: 3850, clem: false, mdm: false, will: true },
+  "Bachelor Assurance (CCAB)": { prix: 4250, clem: true, mdm: true, will: false },
+  "Bachelor RH (CDRH)": { prix: 4620, clem: true, mdm: false, will: false },
+  "Bachelor Banque (COFI)": { prix: 4130, clem: true, mdm: false, will: false },
+  "Bachelor REM": { prix: 4300, clem: false, mdm: false, will: true },
+  "Bachelor Immobilier (RGNI)": { prix: 5440, clem: true, mdm: false, will: false },
+  "Bachelor Business International": { prix: 4300, clem: true, mdm: false, will: false },
+  // Masteres
+  "Mastere Manager Assurance 1": { prix: 4400, clem: true, mdm: false, will: false },
+  "Mastere Manager Assurance 2": { prix: 3700, clem: true, mdm: false, will: false },
+  "Mastere Manager Immobilier 1": { prix: 3700, clem: true, mdm: false, will: false },
+  "Mastere Manager Immobilier 2": { prix: 7400, clem: true, mdm: false, will: false },
+  "Mastere Manager RH 1": { prix: 4100, clem: true, mdm: false, will: false },
+  "Mastere Manager RH 2": { prix: 3900, clem: true, mdm: false, will: false },
+  "Mastere MCCO 1": { prix: 4100, clem: true, mdm: false, will: false },
+  "Mastere MCCO 2": { prix: 3780, clem: true, mdm: false, will: false },
+  "Mastere MCCO 1 spe Event": { prix: 4100, clem: true, mdm: false, will: false },
+  "Mastere CGP 1": { prix: 3900, clem: true, mdm: false, will: false },
+  "Mastere CGP 2": { prix: 4900, clem: true, mdm: false, will: false },
+  "Mastere Manager Financier 1": { prix: 4250, clem: true, mdm: false, will: false },
+  "Mastere Resp. Achat Logistique": { prix: 4250, clem: false, mdm: false, will: true },
+  "Mastere Business Developer 1": { prix: 4550, clem: false, mdm: false, will: true },
+  "Mastere Business Developer 2": { prix: 5590, clem: false, mdm: false, will: true },
+  "Mastere Digital 1": { prix: 3850, clem: false, mdm: false, will: true },
+  "Mastere Digital 2": { prix: 3300, clem: false, mdm: false, will: true }
+};
+
+// Calcul du prix moyen par filiere
+function getPrixMoyenFiliere(filiere) {
+  const mapping = {
+    "Assurance": ["BTS Assurance 1","BTS Assurance 2","Bachelor Assurance (CCAB)","Mastere Manager Assurance 1","Mastere Manager Assurance 2"],
+    "Immobilier": ["BTS Immobilier 1","BTS Immobilier 2","TP Assistant Immobilier","Bachelor Immobilier (RGNI)","Mastere Manager Immobilier 1","Mastere Manager Immobilier 2"],
+    "RH Compta Gestion": ["BTS Compta 1","BTS GPME 1","BTS GPME 2","Collaborateur Comptable","Bachelor RH (CDRH)","Mastere Manager RH 1","Mastere Manager RH 2"],
+    "Commerce Communication Marketing": ["BTS MCO 1","BTS MCO 2","BTS NDRC 1","BTS NDRC 2","BTS Communication 1","TP NTC","Bachelor Business Developer","Mastere MCCO 1","Mastere MCCO 2"],
+    "Banque": ["BTS Banque 1","BTS Banque 2","Bachelor Banque (COFI)","Mastere CGP 1","Mastere CGP 2"],
+    "Tourisme Event": ["BTS Tourisme 1","BTS Tourisme 2","Bachelor Tourisme Evenementiel","Mastere MCCO 1 spe Event"],
+    "Commerce": ["BTS MCO 1","BTS MCO 2","BTS NDRC 1","TP MUM","Bachelor Business Developer","Bachelor Business Developer IA"],
+    "Communication Marketing": ["BTS Communication 1","BTS Communication 2","Bachelor Community Manager","Bachelor Marketing Pub en ligne","Mastere Digital 1","Mastere Digital 2"],
+    "Social": ["BTS ESF 1","BTS ESF 2","BTS SP3S 1","BTS SP3S 2"],
+    "RH Gestion": ["BTS GPME 1","Collaborateur Paie","Bachelor REM","Mastere Resp. Achat Logistique","Mastere Business Developer 1"]
+  };
+  const formations = mapping[filiere] || [];
+  if (!formations.length) return 0;
+  const prices = formations.map(f => formationsCatalogue[f]?.prix || 0).filter(p => p > 0);
+  return prices.length ? Math.round(prices.reduce((a,b) => a+b, 0) / prices.length) : 0;
+}
+
+const dashboardData = {
+  lastUpdate: new Date().toISOString(),
+  group: {
+    prospects: { current: 5509, objective: 8050, month: 106 },
+    candidats: { current: 455, objective: 2030, month: 22 },
+    admis: { current: 359, objective: 1723, month: 14 },
+    inscrits: { current: 549, objective: 2030 },
+    contrats: { current: 47, objective: 960 },
+    offres: { current: 66, objective: 1300, month: 9 },
+    places: { current: 47, objective: 960 },
+    ruptures: 77 + 127,
+    abandons: 21,
+    projection: 806,
+    etudiants: 222 + 724,
+    nbFormations: Object.keys(formationsCatalogue).length
+  },
+  schools: {
+    will: {
+      name: "CLEM",
+      color: "#ff0066",
+      prospects: { current: 1110, objective: 3030, month: 44 },
+      candidats: { current: 95, objective: 680, month: 3 },
+      admis: { current: 57, objective: 543, month: 2 },
+      inscrits: { current: 153, objective: 680 },
+      offres: { current: 2, objective: 300 },
+      places: { current: 28, objective: 225 },
+      abandons: 3,
+      ruptures: 77,
+      projection: 156,
+      etudiants: 222,
+      contratsAlternance: 191,
+      formationInitiale: 41,
+      montants: { current: 10, objective: 128 },
+      packToutBenef: 5,
+      initiaux: 14,
+      formations: [
+        { name: "Commerce", candidats: 8, admis: 21, places: 10, restants: 27, montants: 3, prixMoyen: 4380,
+          sousFormations: [
+            { name: "BTS MCO 1ere", prix: 5390, candidats: 3, admis: 8, places: 4 },
+            { name: "BTS MCO 2eme", prix: 4760, candidats: 1, admis: 5, places: 3 },
+            { name: "BTS NDRC 1ere", prix: 5390, candidats: 2, admis: 4, places: 2 },
+            { name: "TP MUM", prix: 3300, candidats: 1, admis: 2, places: 0 },
+            { name: "Bachelor Business Developer", prix: 3850, candidats: 1, admis: 2, places: 1 }
+          ]},
+        { name: "Communication Marketing", candidats: 5, admis: 12, places: 6, restants: 4, montants: 5, prixMoyen: 4157,
+          sousFormations: [
+            { name: "BTS Communication 1ere", prix: 5390, candidats: 2, admis: 4, places: 2 },
+            { name: "BTS Communication 2eme", prix: 4800, candidats: 1, admis: 3, places: 2 },
+            { name: "Bachelor Community Manager", prix: 4620, candidats: 1, admis: 3, places: 1 },
+            { name: "Bachelor Marketing Pub en ligne", prix: 4620, candidats: 1, admis: 2, places: 1 }
+          ]},
+        { name: "Social", candidats: 2, admis: 2, places: 1, restants: 0, montants: 0, prixMoyen: 5565,
+          sousFormations: [
+            { name: "BTS ESF 1ere", prix: 6300, candidats: 1, admis: 1, places: 1 },
+            { name: "BTS ESF 2eme", prix: 4830, candidats: 0, admis: 0, places: 0 },
+            { name: "BTS SP3S 1ere", prix: 6300, candidats: 1, admis: 1, places: 0 },
+            { name: "BTS SP3S 2eme", prix: 4830, candidats: 0, admis: 0, places: 0 }
+          ]},
+        { name: "RH Gestion", candidats: 5, admis: 6, places: 3, restants: 0, montants: 0, prixMoyen: 4300,
+          sousFormations: [
+            { name: "BTS GPME 1ere", prix: 5390, candidats: 2, admis: 2, places: 1 },
+            { name: "Collaborateur Paie", prix: 3300, candidats: 1, admis: 1, places: 1 },
+            { name: "Bachelor REM", prix: 4300, candidats: 1, admis: 2, places: 1 },
+            { name: "Mastere Resp. Achat Logistique", prix: 4250, candidats: 1, admis: 1, places: 0 }
+          ]}
+      ],
+      actions: {
+        alertes: 0,
+        ruptures: 153,
+        prospectsRappeler: 0,
+        candidatRappeler: 0,
+        entrepriseRappeler: 0,
+        piafValider: 8,
+        paiementAttente: 12,
+        cvValider: 2
+      }
+    },
+    clem: {
+      name: "CLEM",
+      color: "#00d4ff",
+      prospects: { current: 4399, objective: 5020, month: 62 },
+      candidats: { current: 360, objective: 1350, month: 19 },
+      admis: { current: 302, objective: 1180, month: 12 },
+      inscrits: { current: 396, objective: 1350 },
+      offres: { current: 64, objective: 1000 },
+      places: { current: 19, objective: 735 },
+      abandons: 18,
+      ruptures: 127,
+      projection: 650,
+      etudiants: 724,
+      contratsAlternance: 508,
+      formationInitiale: 57,
+      montants: { current: 153, objective: 337 },
+      packToutBenef: 9,
+      initiaux: 73,
+      formations: [
+        { name: "Assurance", candidats: 25, admis: 21, places: 5, restants: 44, montants: 34, prixMoyen: 4486,
+          sousFormations: [
+            { name: "BTS Assurance 1ere", prix: 5390, candidats: 8, admis: 7, places: 2 },
+            { name: "BTS Assurance 2eme", prix: 4690, candidats: 5, admis: 4, places: 1 },
+            { name: "Bachelor Assurance (CCAB)", prix: 4250, candidats: 6, admis: 5, places: 1 },
+            { name: "Mastere Manager Assurance 1", prix: 4400, candidats: 4, admis: 3, places: 1 },
+            { name: "Mastere Manager Assurance 2", prix: 3700, candidats: 2, admis: 2, places: 0 }
+          ]},
+        { name: "Immobilier", candidats: 33, admis: 33, places: 4, restants: 40, montants: 32, prixMoyen: 5122,
+          sousFormations: [
+            { name: "BTS Immobilier 1ere", prix: 5390, candidats: 10, admis: 10, places: 1 },
+            { name: "BTS Immobilier 2eme", prix: 5500, candidats: 6, admis: 6, places: 1 },
+            { name: "TP Assistant Immobilier", prix: 3300, candidats: 3, admis: 3, places: 0 },
+            { name: "Bachelor Immobilier (RGNI)", prix: 5440, candidats: 8, admis: 8, places: 1 },
+            { name: "Mastere Manager Immobilier 1", prix: 3700, candidats: 4, admis: 4, places: 1 },
+            { name: "Mastere Manager Immobilier 2", prix: 7400, candidats: 2, admis: 2, places: 0 }
+          ]},
+        { name: "RH Compta Gestion", candidats: 44, admis: 40, places: 3, restants: 20, montants: 14, abandons: 4, prixMoyen: 4686,
+          sousFormations: [
+            { name: "BTS GPME 1ere", prix: 5390, candidats: 8, admis: 7, places: 1 },
+            { name: "BTS GPME 2eme", prix: 5500, candidats: 5, admis: 5, places: 0 },
+            { name: "BTS Compta 1ere", prix: 5390, candidats: 6, admis: 5, places: 0 },
+            { name: "Collaborateur Comptable", prix: 4000, candidats: 4, admis: 4, places: 1 },
+            { name: "Bachelor RH (CDRH)", prix: 4620, candidats: 10, admis: 9, places: 1 },
+            { name: "Mastere Manager RH 1", prix: 4100, candidats: 7, admis: 6, places: 0 },
+            { name: "Mastere Manager RH 2", prix: 3900, candidats: 4, admis: 4, places: 0 }
+          ]},
+        { name: "Commerce Communication Marketing", candidats: 84, admis: 96, places: 5, restants: 77, montants: 17, abandons: 2, prixMoyen: 4544,
+          sousFormations: [
+            { name: "BTS MCO 1ere", prix: 5390, candidats: 15, admis: 18, places: 1 },
+            { name: "BTS MCO 2eme", prix: 4760, candidats: 10, admis: 12, places: 1 },
+            { name: "BTS NDRC 1ere", prix: 5390, candidats: 12, admis: 14, places: 0 },
+            { name: "BTS NDRC 2eme", prix: 5500, candidats: 8, admis: 10, places: 0 },
+            { name: "BTS Communication 1ere", prix: 5390, candidats: 10, admis: 12, places: 1 },
+            { name: "TP NTC", prix: 3300, candidats: 5, admis: 6, places: 0 },
+            { name: "Bachelor Business Developer", prix: 3850, candidats: 12, admis: 14, places: 1 },
+            { name: "Mastere MCCO 1", prix: 4100, candidats: 8, admis: 6, places: 1 },
+            { name: "Mastere MCCO 2", prix: 3780, candidats: 4, admis: 4, places: 0 }
+          ]},
+        { name: "Banque", candidats: 27, admis: 9, places: 2, restants: 18, montants: 33, prixMoyen: 4672,
+          sousFormations: [
+            { name: "BTS Banque 1ere", prix: 5390, candidats: 10, admis: 3, places: 1 },
+            { name: "BTS Banque 2eme", prix: 5640, candidats: 7, admis: 2, places: 0 },
+            { name: "Bachelor Banque (COFI)", prix: 4130, candidats: 6, admis: 2, places: 1 },
+            { name: "Mastere CGP 1", prix: 3900, candidats: 3, admis: 1, places: 0 },
+            { name: "Mastere CGP 2", prix: 4900, candidats: 1, admis: 1, places: 0 }
+          ]},
+        { name: "Tourisme Event", candidats: 11, admis: 9, places: 0, restants: 23, montants: 0, prixMoyen: 4778,
+          sousFormations: [
+            { name: "BTS Tourisme 1ere", prix: 5390, candidats: 4, admis: 3, places: 0 },
+            { name: "BTS Tourisme 2eme", prix: 5500, candidats: 3, admis: 3, places: 0 },
+            { name: "Bachelor Tourisme Evenementiel", prix: 4620, candidats: 3, admis: 2, places: 0 },
+            { name: "Mastere MCCO spe Event", prix: 4100, candidats: 1, admis: 1, places: 0 }
+          ]}
+      ],
+      detailFormations: [
+        { name: "BTS Assurance", prix: 5390, annee: 1 },
+        { name: "BTS Assurance", prix: 4690, annee: 2 },
+        { name: "BTS Banque", prix: 5390, annee: 1 },
+        { name: "BTS Banque", prix: 5640, annee: 2 },
+        { name: "BTS MCO", prix: 5390, annee: 1 },
+        { name: "BTS MCO", prix: 4760, annee: 2 },
+        { name: "BTS NDRC", prix: 5390, annee: 1 },
+        { name: "BTS NDRC", prix: 5500, annee: 2 },
+        { name: "BTS GPME", prix: 5390, annee: 1 },
+        { name: "BTS GPME", prix: 5500, annee: 2 },
+        { name: "BTS Immobilier", prix: 5390, annee: 1 },
+        { name: "BTS Immobilier", prix: 5500, annee: 2 },
+        { name: "BTS Communication", prix: 5390, annee: 1 },
+        { name: "BTS Compta", prix: 5390, annee: 1 },
+        { name: "BTS SAM", prix: 5390, annee: 1 },
+        { name: "BTS Tourisme", prix: 5390, annee: 1 },
+        { name: "BTS Tourisme", prix: 5500, annee: 2 },
+        { name: "TP NTC", prix: 3300, annee: 1 },
+        { name: "TP Assistant Immobilier", prix: 3300, annee: 1 },
+        { name: "TP Secretaire Assistant", prix: 3300, annee: 1 },
+        { name: "Collaborateur Comptable", prix: 4000, annee: 1 },
+        { name: "Bachelor Tourisme Evenementiel", prix: 4620, annee: 1 },
+        { name: "Bachelor Office Manager", prix: 4620, annee: 1 },
+        { name: "Bachelor Business Developer", prix: 3850, annee: 1 },
+        { name: "Bachelor Assurance (CCAB)", prix: 4250, annee: 1 },
+        { name: "Bachelor RH (CDRH)", prix: 4620, annee: 1 },
+        { name: "Bachelor Banque (COFI)", prix: 4130, annee: 1 },
+        { name: "Bachelor Immobilier (RGNI)", prix: 5440, annee: 1 },
+        { name: "Bachelor Business International", prix: 4300, annee: 1 },
+        { name: "Mastere Manager Assurance", prix: 4400, annee: 1 },
+        { name: "Mastere Manager Assurance", prix: 3700, annee: 2 },
+        { name: "Mastere Manager Immobilier", prix: 3700, annee: 1 },
+        { name: "Mastere Manager Immobilier", prix: 7400, annee: 2 },
+        { name: "Mastere Manager RH", prix: 4100, annee: 1 },
+        { name: "Mastere Manager RH", prix: 3900, annee: 2 },
+        { name: "Mastere MCCO", prix: 4100, annee: 1 },
+        { name: "Mastere MCCO", prix: 3780, annee: 2 },
+        { name: "Mastere MCCO spe Event", prix: 4100, annee: 1 },
+        { name: "Mastere CGP", prix: 3900, annee: 1 },
+        { name: "Mastere CGP", prix: 4900, annee: 2 },
+        { name: "Mastere Manager Financier", prix: 4250, annee: 1 }
+      ],
+      actions: {
+        alertes: 0,
+        ruptures: 229,
+        prospectsRappeler: 0,
+        candidatRappeler: 2,
+        entrepriseRappeler: 0,
+        piafValider: 0,
+        paiementAttente: 69,
+        cvValider: 1
+      }
+    },
+    clemMdm: {
+      name: "CLEM MDM",
+      color: "#a78bfa",
+      prospects: { current: 0, objective: 0, month: 0 },
+      candidats: { current: 0, objective: 0, month: 0 },
+      admis: { current: 0, objective: 0, month: 0 },
+      inscrits: { current: 0, objective: 0 },
+      offres: { current: 0, objective: 0 },
+      places: { current: 0, objective: 0 },
+      abandons: 0,
+      ruptures: 0,
+      projection: 0,
+      etudiants: 0,
+      contratsAlternance: 0,
+      formationInitiale: 0,
+      montants: { current: 0, objective: 0 },
+      packToutBenef: 0,
+      initiaux: 0,
+      formations: [],
+      detailFormations: [
+        { name: "BTS MCO", prix: 5390, annee: 1 },
+        { name: "BTS MCO", prix: 4760, annee: 2 },
+        { name: "BTS NDRC", prix: 5390, annee: 1 },
+        { name: "BTS GPME", prix: 5500, annee: 2 },
+        { name: "BTS Communication", prix: 5390, annee: 1 },
+        { name: "TP NTC", prix: 3300, annee: 1 },
+        { name: "Bachelor Business Developer", prix: 3850, annee: 1 },
+        { name: "Bachelor Assurance (CCAB)", prix: 4250, annee: 1 }
+      ],
+      actions: {
+        alertes: 0,
+        ruptures: 0,
+        prospectsRappeler: 0,
+        candidatRappeler: 0,
+        entrepriseRappeler: 0,
+        piafValider: 0,
+        paiementAttente: 0,
+        cvValider: 0
+      }
+    }
+  }
+};
+
+// ---- Current view state ----
+let currentView = 'group';
+
+// ---- Utility functions ----
+function pct(current, objective) {
+  if (!objective) return 0;
+  return Math.min(Math.round((current / objective) * 100), 100);
+}
+
+function pctRaw(current, objective) {
+  if (!objective) return 0;
+  return Math.round((current / objective) * 100);
+}
+
+function formatNum(n) {
+  return n != null ? n.toLocaleString('fr-FR') : '0';
+}
+
+function gaugeColor(percent) {
+  if (percent >= 70) return '#00ff88';
+  if (percent >= 40) return '#ff8c00';
+  return '#ff3366';
+}
+
+function gaugeColorVar(percent) {
+  if (percent >= 70) return 'var(--green)';
+  if (percent >= 40) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+// ---- SVG Gauge builder ----
+function buildGaugeSVG(id, percent, color, size = 170) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = (size / 2) - 14;
+  const startAngle = -225;
+  const totalAngle = 270;
+  const endAngle = startAngle + totalAngle;
+
+  // Arc helper
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+  function describeArc(cx, cy, r, startAngle, endAngle) {
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArc = endAngle - startAngle <= 180 ? 0 : 1;
+    return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`;
+  }
+
+  const clampedPct = Math.min(percent, 100);
+  const valueAngle = startAngle + (totalAngle * clampedPct) / 100;
+
+  // Tick marks
+  let ticks = '';
+  for (let i = 0; i <= 10; i++) {
+    const angle = startAngle + (totalAngle * i) / 10;
+    const outer = polarToCartesian(cx, cy, r + 6, angle);
+    const inner = polarToCartesian(cx, cy, r + 1, angle);
+    const isMajor = i % 5 === 0;
+    ticks += `<line x1="${inner.x}" y1="${inner.y}" x2="${outer.x}" y2="${outer.y}"
+      stroke="${isMajor ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)'}"
+      stroke-width="${isMajor ? 1.5 : 0.8}" stroke-linecap="round"/>`;
+  }
+  // Minor ticks
+  for (let i = 0; i < 50; i++) {
+    const angle = startAngle + (totalAngle * i) / 50;
+    const outer = polarToCartesian(cx, cy, r + 3, angle);
+    const inner = polarToCartesian(cx, cy, r + 1, angle);
+    ticks += `<line x1="${inner.x}" y1="${inner.y}" x2="${outer.x}" y2="${outer.y}"
+      stroke="rgba(255,255,255,0.07)" stroke-width="0.5" stroke-linecap="round"/>`;
+  }
+
+  return `<svg class="gauge-svg" viewBox="0 0 ${size} ${size}" data-gauge-id="${id}" data-target-pct="${percent}">
+    <!-- Track -->
+    <path d="${describeArc(cx, cy, r, startAngle, endAngle)}"
+      fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8" stroke-linecap="round"/>
+    <!-- Value arc (animated via JS) -->
+    <path class="gauge-arc" d="${describeArc(cx, cy, r, startAngle, valueAngle)}"
+      fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round"
+      stroke-dasharray="1000" stroke-dashoffset="1000"/>
+    <!-- Ticks -->
+    ${ticks}
+    <!-- Outer decorative ring -->
+    <circle cx="${cx}" cy="${cy}" r="${r + 10}" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+    <circle cx="${cx}" cy="${cy}" r="${r - 6}" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/>
+  </svg>`;
+}
+
+// ---- Render functions ----
+
+function renderGroupView() {
+  const d = dashboardData.group;
+  const gauges = [
+    { id: 'prospects', label: 'Prospects', current: d.prospects.current, obj: d.prospects.objective, month: d.prospects.month, icon: 'fa-users' },
+    { id: 'admis', label: 'Admis', current: d.admis.current, obj: d.admis.objective, month: d.admis.month, icon: 'fa-user-check' },
+    { id: 'contrats', label: 'Contrats', current: d.contrats.current, obj: d.contrats.objective, icon: 'fa-file-signature' },
+    { id: 'inscrits', label: 'Inscrits', current: d.inscrits.current, obj: d.inscrits.objective, icon: 'fa-graduation-cap' }
+  ];
+
+  // Mini stats - campagne 2026-2027
+  const miniStats = [
+    { label: 'Candidats', value: d.candidats.current, icon: 'fa-id-card', color: 'var(--cyan)', bg: 'rgba(0,212,255,0.1)', obj: d.candidats.objective },
+    { label: 'Offres', value: d.offres.current, icon: 'fa-briefcase', color: 'var(--cyan)', bg: 'rgba(0,212,255,0.1)', obj: d.offres.objective },
+    { label: 'Contrats', value: d.places.current, icon: 'fa-file-signature', color: 'var(--green)', bg: 'rgba(0,255,136,0.1)', obj: d.places.objective },
+    { label: 'Abandons', value: d.abandons, icon: 'fa-person-walking-arrow-right', color: 'var(--red)', bg: 'rgba(255,51,102,0.1)' },
+    { label: 'Projection', value: d.projection, icon: 'fa-chart-line', color: 'var(--green)', bg: 'rgba(0,255,136,0.1)' },
+    { label: 'Nb Formations', value: d.nbFormations || 57, icon: 'fa-graduation-cap', color: 'var(--cyan)', bg: 'rgba(0,212,255,0.1)' }
+  ];
+
+  // Merge all formations
+  const groupSchoolNames = { will: 'CLEM', clem: 'CLEM', clemMdm: 'CLEM MDM' };
+  const groupSchoolColors = { will: '#ff0066', clem: '#00d4ff', clemMdm: '#a78bfa' };
+  const allFormations = [];
+  for (const [key, school] of Object.entries(dashboardData.schools)) {
+    const sName = groupSchoolNames[key] || school.name || key;
+    const sColor = groupSchoolColors[key] || school.color || '#00d4ff';
+    if (!school.formations || !school.formations.length) continue;
+    for (const f of school.formations) {
+      allFormations.push({ ...f, school: sName, schoolColor: sColor });
+    }
+  }
+
+  let html = '';
+
+  // Section: Gauges
+  html += `<div class="section-title"><i class="fa-solid fa-gauge-high"></i> Instruments Principaux <span style="font-size:0.55rem;color:var(--amber);letter-spacing:2px;margin-left:12px">CAMPAGNE 2026-2027</span></div>`;
+  html += `<div class="gauges-row">`;
+  for (const g of gauges) {
+    const p = pctRaw(g.current, g.obj);
+    const color = gaugeColor(p);
+    html += `<div class="gauge-card animate-in tooltip-wrap">
+      <div class="tooltip-content">
+        <div class="tooltip-row"><span class="tooltip-row-label">Actuel</span><span class="tooltip-row-value">${formatNum(g.current)}</span></div>
+        <div class="tooltip-row"><span class="tooltip-row-label">Objectif</span><span class="tooltip-row-value">${formatNum(g.obj)}</span></div>
+        <div class="tooltip-row"><span class="tooltip-row-label">Progression</span><span class="tooltip-row-value">${p}%</span></div>
+        ${g.month != null ? `<div class="tooltip-row"><span class="tooltip-row-label">Ce mois</span><span class="tooltip-row-value">+${g.month}</span></div>` : ''}
+      </div>
+      <div class="gauge-svg-wrap">
+        ${buildGaugeSVG(g.id, p, color)}
+        <div class="gauge-center-value">
+          <div class="gauge-number counter" data-target="${g.current}" style="color:${color}">0</div>
+          <div class="gauge-pct" style="color:${color}">${p}%</div>
+        </div>
+      </div>
+      <div class="gauge-label">${g.label}</div>
+      <div class="gauge-obj">Obj: <span>${formatNum(g.obj)}</span></div>
+      ${g.month != null ? `<div class="gauge-month"><i class="fa-solid fa-arrow-trend-up"></i> +${g.month} ce mois</div>` : ''}
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Section: Mini stats
+  html += `<div class="stats-row">`;
+  for (const s of miniStats) {
+    html += `<div class="stat-mini animate-in">
+      <div class="stat-mini-icon" style="background:${s.bg};color:${s.color}"><i class="fa-solid ${s.icon}"></i></div>
+      <div class="stat-mini-data">
+        <div class="stat-mini-value counter" data-target="${s.value}" style="color:${s.color}">0</div>
+        <div class="stat-mini-label">${s.label}${s.obj ? ` / ${formatNum(s.obj)}` : ''}</div>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Section: Formation table
+  html += `<div class="table-section">
+    <div class="section-title"><i class="fa-solid fa-table-columns"></i> Tableau de Bord par Filiere <span style="font-size:0.55rem;color:var(--text-secondary);letter-spacing:1px;margin-left:8px">CLIQUER POUR DETAIL</span></div>
+    <div class="cockpit-table-wrap"><table class="cockpit-table">
+    <thead><tr>
+      <th></th><th>Filiere</th><th>Ecole</th><th>Candidats</th><th>Admis</th><th>Contrats</th><th>Restants</th><th>Montants</th><th>Prix Moy.</th><th>CA Contrats</th><th>Abandons</th>
+    </tr></thead><tbody>`;
+  const maxCandG = Math.max(...allFormations.map(x => x.candidats), 1);
+  const maxPlacesG = Math.max(...allFormations.map(x => x.places || 0), 1);
+  let totalCA = 0;
+  let fIdx = 0;
+  for (const f of allFormations) {
+    const places = f.places || 0;
+    const caEstime = (f.prixMoyen || 0) * places;
+    totalCA += caEstime;
+    const hasSub = f.sousFormations && f.sousFormations.length > 0;
+    const rowId = `filiere-${fIdx}`;
+    html += `<tr class="${hasSub ? 'filiere-row expandable' : ''}" data-target="${rowId}" style="cursor:${hasSub ? 'pointer' : 'default'}">
+      <td style="width:30px;text-align:center">${hasSub ? '<i class="fa-solid fa-chevron-right expand-icon" style="color:var(--cyan);font-size:0.6rem;transition:transform 0.3s"></i>' : ''}</td>
+      <td><strong>${f.name}</strong></td>
+      <td><span class="school-badge" style="background:${f.schoolColor}22;color:${f.schoolColor};border:1px solid ${f.schoolColor}44">${f.school}</span></td>
+      <td><div class="cell-bar-wrap"><div class="cell-bar"><div class="cell-bar-fill" style="background:var(--cyan);width:0" data-width="${(f.candidats/maxCandG)*100}%"></div></div><span class="cell-num">${f.candidats}</span></div></td>
+      <td><span class="cell-num">${f.admis}</span></td>
+      <td><span class="cell-num" style="color:${places > 0 ? 'var(--green)' : 'var(--text-secondary)'};font-weight:700">${places}</span></td>
+      <td><span class="cell-num" style="color:${f.restants > 0 ? 'var(--amber)' : 'var(--green)'}">${f.restants}</span></td>
+      <td><span class="cell-num">${f.montants}</span></td>
+      <td><span class="cell-num" style="color:var(--cyan)">${f.prixMoyen ? formatNum(f.prixMoyen) + ' \u20ac' : '-'}</span></td>
+      <td><span class="cell-num" style="color:var(--green);font-weight:600">${caEstime > 0 ? formatNum(caEstime) + ' \u20ac' : '-'}</span></td>
+      <td><span class="cell-num" style="color:${(f.abandons||0) > 0 ? 'var(--red)' : 'var(--text-secondary)'}">${f.abandons || 0}</span></td>
+    </tr>`;
+    // Sous-formations (hidden by default)
+    if (hasSub) {
+      for (const sf of f.sousFormations) {
+        const sfCA = (sf.prix || 0) * (sf.places || 0);
+        html += `<tr class="sub-row sub-${rowId}" style="display:none">
+          <td></td>
+          <td style="padding-left:28px;font-size:0.75rem;color:var(--text-secondary)"><i class="fa-solid fa-turn-up fa-rotate-90" style="font-size:0.5rem;margin-right:6px;color:var(--cyan);opacity:0.5"></i>${sf.name}</td>
+          <td></td>
+          <td><span class="cell-num" style="font-size:0.75rem">${sf.candidats || 0}</span></td>
+          <td><span class="cell-num" style="font-size:0.75rem">${sf.admis || 0}</span></td>
+          <td><span class="cell-num" style="font-size:0.75rem;color:${(sf.places||0) > 0 ? 'var(--green)' : 'var(--text-secondary)'}">${sf.places || 0}</span></td>
+          <td></td>
+          <td></td>
+          <td><span class="cell-num" style="font-size:0.75rem;color:var(--amber)">${formatNum(sf.prix)} \u20ac</span></td>
+          <td><span class="cell-num" style="font-size:0.75rem;color:${sfCA > 0 ? 'var(--green)' : 'var(--text-secondary)'}">${sfCA > 0 ? formatNum(sfCA) + ' \u20ac' : '-'}</span></td>
+          <td></td>
+        </tr>`;
+      }
+    }
+    fIdx++;
+  }
+  html += `<tr class="total-row" style="border-top:2px solid var(--cyan)">
+    <td colspan="9" style="text-align:right;font-family:var(--font-hud);font-size:0.75rem;letter-spacing:1px;color:var(--cyan)">CA TOTAL (CONTRATS)</td>
+    <td><span class="cell-num" style="color:var(--green);font-weight:700;font-size:1.1rem">${formatNum(totalCA)} \u20ac</span></td>
+    <td></td>
+  </tr>`;
+  html += `</tbody></table></div></div>`;
+
+  // Bottom row: Funnel + Actions
+  html += `<div class="bottom-row">`;
+  // Funnel
+  const funnelSteps = [
+    { label: 'Prospects', value: d.prospects.current, color: 'var(--cyan)', pct: 100 },
+    { label: 'Candidats', value: d.candidats.current, color: '#4dc9f6', pct: (d.candidats.current / d.prospects.current) * 100 },
+    { label: 'Admis', value: d.admis.current, color: '#a78bfa', pct: (d.admis.current / d.prospects.current) * 100 },
+    { label: 'Inscrits', value: d.inscrits.current, color: '#f59e0b', pct: (d.inscrits.current / d.prospects.current) * 100 },
+    { label: 'Contrats', value: d.contrats.current, color: 'var(--green)', pct: (d.contrats.current / d.prospects.current) * 100 }
+  ];
+  html += `<div class="panel"><div class="panel-title"><i class="fa-solid fa-filter"></i> Entonnoir de Conversion</div><div class="funnel">`;
+  for (let i = 0; i < funnelSteps.length; i++) {
+    const s = funnelSteps[i];
+    const w = Math.max(s.pct, 12);
+    html += `<div class="funnel-step">
+      <span class="funnel-label">${s.label}</span>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" data-width="${w}%" style="background:${s.color}33;border:1px solid ${s.color}55;width:0">
+          <span class="funnel-bar-value">${formatNum(s.value)}</span>
+        </div>
+        ${i < funnelSteps.length - 1 ? '<span class="funnel-arrow"><i class="fa-solid fa-chevron-down"></i></span>' : ''}
+      </div>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // Actions
+  const willA = dashboardData.schools.will.actions;
+  const nsA = dashboardData.schools.clem.actions;
+  const actions = [
+    { label: 'Ruptures totales', value: willA.ruptures + nsA.ruptures, icon: 'fa-link-slash', color: 'var(--red)', bg: 'var(--red-dim)', cls: 'alert' },
+    { label: 'Paiements en attente', value: willA.paiementAttente + nsA.paiementAttente, icon: 'fa-credit-card', color: 'var(--amber)', bg: 'var(--amber-dim)', cls: 'warning' },
+    { label: 'Abandons', value: d.abandons, icon: 'fa-person-walking-arrow-right', color: 'var(--red)', bg: 'var(--red-dim)', cls: 'alert' },
+    { label: 'PIAF a valider', value: willA.piafValider + nsA.piafValider, icon: 'fa-file-circle-check', color: 'var(--amber)', bg: 'var(--amber-dim)', cls: 'warning' },
+    { label: 'CV a valider', value: willA.cvValider + nsA.cvValider, icon: 'fa-file-lines', color: 'var(--cyan)', bg: 'var(--cyan-dim)', cls: 'info' },
+    { label: 'Candidats a rappeler', value: willA.candidatRappeler + nsA.candidatRappeler, icon: 'fa-phone', color: 'var(--cyan)', bg: 'var(--cyan-dim)', cls: 'info' },
+    { label: 'Alertes', value: willA.alertes + nsA.alertes, icon: 'fa-bell', color: 'var(--green)', bg: 'var(--green-dim)', cls: 'ok' },
+    { label: 'Projection fin annee', value: d.projection, icon: 'fa-bullseye', color: 'var(--green)', bg: 'var(--green-dim)', cls: 'ok' }
+  ];
+  html += `<div class="panel"><div class="panel-title"><i class="fa-solid fa-triangle-exclamation"></i> Actions & Alertes</div><div class="actions-grid">`;
+  for (const a of actions) {
+    html += `<div class="action-item ${a.cls}">
+      <div class="action-icon" style="background:${a.bg};color:${a.color}"><i class="fa-solid ${a.icon}"></i></div>
+      <div class="action-data">
+        <div class="action-value counter" data-target="${a.value}" style="color:${a.color}">0</div>
+        <div class="action-label">${a.label}</div>
+      </div>
+    </div>`;
+  }
+  html += `</div></div>`;
+  html += `</div>`;
+
+  return html;
+}
+
+function renderSchoolView(schoolKey) {
+  const s = dashboardData.schools[schoolKey];
+  if (!s) return '<p>Ecole non trouvee</p>';
+
+  // Toujours forcer name et color selon la cle
+  const schoolNames = { will: 'CLEM', clem: 'CLEM', clemMdm: 'CLEM MDM' };
+  const schoolColors = { will: '#ff0066', clem: '#00d4ff', clemMdm: '#a78bfa' };
+  s.name = schoolNames[schoolKey] || s.name || schoolKey;
+  s.color = schoolColors[schoolKey] || s.color || '#00d4ff';
+
+  const gauges = [
+    { id: `${schoolKey}-prospects`, label: 'Prospects', current: s.prospects.current, obj: s.prospects.objective, month: s.prospects.month },
+    { id: `${schoolKey}-admis`, label: 'Admis', current: s.admis.current, obj: s.admis.objective, month: s.admis.month },
+    { id: `${schoolKey}-inscrits`, label: 'Inscrits', current: s.inscrits.current, obj: s.inscrits.objective },
+    { id: `${schoolKey}-places`, label: 'Contrats', current: s.places.current, obj: s.places.objective }
+  ];
+
+  let html = '';
+
+  // School header - KPIs campagne 2026-2027
+  const admisVal = s.admis?.current || 0;
+  const placesVal = s.places?.current || 0;
+  const prospectsVal = s.prospects?.current || 0;
+  const prospectsObj = s.prospects?.objective || 1;
+  const inscritsVal = s.inscrits?.current || 0;
+  const inscritsObj = s.inscrits?.objective || 0;
+  html += `<div class="school-header">
+    <div class="school-header-dot" style="background:${s.color};box-shadow:0 0 10px ${s.color}"></div>
+    <div class="school-header-name" style="color:${s.color}">${s.name} <span style="font-size:0.55rem;color:var(--text-secondary);letter-spacing:2px;margin-left:8px">CAMPAGNE 2026-2027</span></div>
+    <div class="school-header-stats">
+      <div class="school-header-stat"><div class="school-header-stat-val" style="color:var(--cyan)">${formatNum(prospectsVal)}<span style="font-size:0.5rem;color:var(--text-secondary)">/${formatNum(prospectsObj)}</span></div><div class="school-header-stat-lbl">Prospects</div></div>
+      <div class="school-header-stat"><div class="school-header-stat-val" style="color:var(--amber)">${formatNum(admisVal)}</div><div class="school-header-stat-lbl">Admis</div></div>
+      <div class="school-header-stat"><div class="school-header-stat-val" style="color:var(--green)">${formatNum(inscritsVal)}<span style="font-size:0.5rem;color:var(--text-secondary)">/${formatNum(inscritsObj)}</span></div><div class="school-header-stat-lbl">Inscrits</div></div>
+      <div class="school-header-stat"><div class="school-header-stat-val" style="color:var(--green)">${formatNum(placesVal)}<span style="font-size:0.5rem;color:var(--text-secondary)">/${formatNum(s.places?.objective || 0)}</span></div><div class="school-header-stat-lbl">Contrats</div></div>
+      <div class="school-header-stat"><div class="school-header-stat-val" style="color:var(--cyan)">${formatNum(s.projection)}</div><div class="school-header-stat-lbl">Projection</div></div>
+      <div class="school-header-stat"><div class="school-header-stat-val" style="color:var(--green)">${s.montants?.current || 0}<span style="font-size:0.5rem;color:var(--text-secondary)">/${s.montants?.objective || 0}</span></div><div class="school-header-stat-lbl">Montants</div></div>
+    </div>
+  </div>`;
+
+  // Gauges
+  html += `<div class="section-title"><i class="fa-solid fa-gauge-high"></i> Instruments - ${s.name}</div>`;
+  html += `<div class="gauges-row">`;
+  for (const g of gauges) {
+    const p = pctRaw(g.current, g.obj);
+    const color = gaugeColor(p);
+    html += `<div class="gauge-card animate-in tooltip-wrap">
+      <div class="tooltip-content">
+        <div class="tooltip-row"><span class="tooltip-row-label">Actuel</span><span class="tooltip-row-value">${formatNum(g.current)}</span></div>
+        <div class="tooltip-row"><span class="tooltip-row-label">Objectif</span><span class="tooltip-row-value">${formatNum(g.obj)}</span></div>
+        <div class="tooltip-row"><span class="tooltip-row-label">Progression</span><span class="tooltip-row-value">${p}%</span></div>
+      </div>
+      <div class="gauge-svg-wrap">
+        ${buildGaugeSVG(g.id, p, color)}
+        <div class="gauge-center-value">
+          <div class="gauge-number counter" data-target="${g.current}" style="color:${color}">0</div>
+          <div class="gauge-pct" style="color:${color}">${p}%</div>
+        </div>
+      </div>
+      <div class="gauge-label">${g.label}</div>
+      <div class="gauge-obj">Obj: <span>${formatNum(g.obj)}</span></div>
+      ${g.month != null ? `<div class="gauge-month"><i class="fa-solid fa-arrow-trend-up"></i> +${g.month} ce mois</div>` : ''}
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Mini stats - campagne 2026-2027
+  const miniStats = [
+    { label: 'Candidats', value: s.candidats?.current || 0, icon: 'fa-id-card', color: 'var(--cyan)', bg: 'rgba(0,212,255,0.1)', obj: s.candidats?.objective },
+    { label: 'Offres', value: s.offres?.current || 0, icon: 'fa-briefcase', color: 'var(--cyan)', bg: 'rgba(0,212,255,0.1)', obj: s.offres?.objective },
+    { label: 'Restants', value: s.restants || 0, icon: 'fa-hourglass-half', color: 'var(--amber)', bg: 'rgba(255,140,0,0.1)' },
+    { label: 'Abandons', value: s.abandons || 0, icon: 'fa-person-walking-arrow-right', color: 'var(--red)', bg: 'rgba(255,51,102,0.1)' },
+    { label: 'Pack Tout Benef', value: s.packToutBenef || 0, icon: 'fa-box-open', color: 'var(--amber)', bg: 'rgba(255,140,0,0.1)' },
+    { label: 'Initiaux', value: s.initiaux || 0, icon: 'fa-flag-checkered', color: 'var(--green)', bg: 'rgba(0,255,136,0.1)' }
+  ];
+  html += `<div class="stats-row">`;
+  for (const st of miniStats) {
+    html += `<div class="stat-mini animate-in">
+      <div class="stat-mini-icon" style="background:${st.bg};color:${st.color}"><i class="fa-solid ${st.icon}"></i></div>
+      <div class="stat-mini-data">
+        <div class="stat-mini-value counter" data-target="${st.value}" style="color:${st.color}">0</div>
+        <div class="stat-mini-label">${st.label}${st.obj ? ` / ${formatNum(st.obj)}` : ''}</div>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Formation table - Filieres
+  if (s.formations.length > 0) {
+    html += `<div class="table-section">
+      <div class="section-title"><i class="fa-solid fa-table-columns"></i> Filieres - ${s.name} <span style="font-size:0.55rem;color:var(--text-secondary);letter-spacing:1px;margin-left:8px">CLIQUER POUR DETAIL</span></div>
+      <div class="cockpit-table-wrap"><table class="cockpit-table">
+      <thead><tr>
+        <th></th><th>Filiere</th><th>Candidats</th><th>Admis</th><th>Contrats</th><th>Restants</th><th>Montants</th><th>Prix Moy.</th><th>CA Contrats</th><th>Abandons</th>
+      </tr></thead><tbody>`;
+    const maxC = Math.max(...s.formations.map(f => f.candidats), 1);
+    let schoolCA = 0;
+    let sIdx = 0;
+    for (const f of s.formations) {
+      const places = f.places || 0;
+      const ca = (f.prixMoyen || 0) * places;
+      schoolCA += ca;
+      const hasSub = f.sousFormations && f.sousFormations.length > 0;
+      const rowId = `school-${sIdx}`;
+      html += `<tr class="${hasSub ? 'filiere-row expandable' : ''}" data-target="${rowId}" style="cursor:${hasSub ? 'pointer' : 'default'}">
+        <td style="width:30px;text-align:center">${hasSub ? '<i class="fa-solid fa-chevron-right expand-icon" style="color:' + s.color + ';font-size:0.6rem;transition:transform 0.3s"></i>' : ''}</td>
+        <td><strong>${f.name}</strong></td>
+        <td><div class="cell-bar-wrap"><div class="cell-bar"><div class="cell-bar-fill" style="background:${s.color};width:0" data-width="${(f.candidats/maxC)*100}%"></div></div><span class="cell-num">${f.candidats}</span></div></td>
+        <td><span class="cell-num">${f.admis}</span></td>
+        <td><span class="cell-num" style="color:${places > 0 ? 'var(--green)' : 'var(--text-secondary)'};font-weight:700">${places}</span></td>
+        <td><span class="cell-num" style="color:${f.restants > 0 ? 'var(--amber)' : 'var(--green)'}">${f.restants}</span></td>
+        <td><span class="cell-num">${f.montants}</span></td>
+        <td><span class="cell-num" style="color:var(--cyan)">${f.prixMoyen ? formatNum(f.prixMoyen) + ' \u20ac' : '-'}</span></td>
+        <td><span class="cell-num" style="color:var(--green);font-weight:600">${ca > 0 ? formatNum(ca) + ' \u20ac' : '-'}</span></td>
+        <td><span class="cell-num" style="color:${(f.abandons||0) > 0 ? 'var(--red)' : 'var(--text-secondary)'}">${f.abandons || 0}</span></td>
+      </tr>`;
+      if (hasSub) {
+        for (const sf of f.sousFormations) {
+          const sfCA = (sf.prix || 0) * (sf.places || 0);
+          html += `<tr class="sub-row sub-${rowId}" style="display:none">
+            <td></td>
+            <td style="padding-left:28px;font-size:0.75rem;color:var(--text-secondary)"><i class="fa-solid fa-turn-up fa-rotate-90" style="font-size:0.5rem;margin-right:6px;color:${s.color};opacity:0.5"></i>${sf.name}</td>
+            <td><span class="cell-num" style="font-size:0.75rem">${sf.candidats || 0}</span></td>
+            <td><span class="cell-num" style="font-size:0.75rem">${sf.admis || 0}</span></td>
+            <td><span class="cell-num" style="font-size:0.75rem;color:${(sf.places||0) > 0 ? 'var(--green)' : 'var(--text-secondary)'}">${sf.places || 0}</span></td>
+            <td></td>
+            <td></td>
+            <td><span class="cell-num" style="font-size:0.75rem;color:var(--amber)">${formatNum(sf.prix)} \u20ac</span></td>
+            <td><span class="cell-num" style="font-size:0.75rem;color:${sfCA > 0 ? 'var(--green)' : 'var(--text-secondary)'}">${sfCA > 0 ? formatNum(sfCA) + ' \u20ac' : '-'}</span></td>
+            <td></td>
+          </tr>`;
+        }
+      }
+      sIdx++;
+    }
+    html += `<tr class="total-row" style="border-top:2px solid ${s.color}">
+      <td colspan="8" style="text-align:right;font-family:var(--font-hud);font-size:0.75rem;letter-spacing:1px;color:${s.color}">CA TOTAL (CONTRATS)</td>
+      <td><span class="cell-num" style="color:var(--green);font-weight:700;font-size:1.1rem">${formatNum(schoolCA)} \u20ac</span></td>
+      <td></td>
+    </tr>`;
+    html += `</tbody></table></div></div>`;
+  }
+
+  // Detail formations table (catalogue avec prix)
+  if (s.detailFormations && s.detailFormations.length > 0) {
+    html += `<div class="table-section">
+      <div class="section-title"><i class="fa-solid fa-list-check"></i> Catalogue Formations - ${s.name} (${s.detailFormations.length} diplomes)</div>
+      <div class="cockpit-table-wrap"><table class="cockpit-table">
+      <thead><tr>
+        <th>Formation</th><th>Annee</th><th>Cout Moyen</th>
+      </tr></thead><tbody>`;
+    for (const df of s.detailFormations) {
+      html += `<tr>
+        <td>${df.name}</td>
+        <td><span class="cell-num" style="color:var(--cyan)">${df.annee}${df.annee === 1 ? 'ere' : 'eme'}</span></td>
+        <td><span class="cell-num" style="color:var(--amber);font-weight:500">${formatNum(df.prix)} \u20ac</span></td>
+      </tr>`;
+    }
+    html += `</tbody></table></div></div>`;
+  }
+
+  // Bottom: Funnel + Actions
+  html += `<div class="bottom-row">`;
+  const funnelSteps = [
+    { label: 'Prospects', value: s.prospects.current, color: s.color, pct: 100 },
+    { label: 'Candidats', value: s.candidats.current, color: '#4dc9f6', pct: (s.candidats.current / s.prospects.current) * 100 },
+    { label: 'Admis', value: s.admis.current, color: '#a78bfa', pct: (s.admis.current / s.prospects.current) * 100 },
+    { label: 'Inscrits', value: s.inscrits.current, color: '#f59e0b', pct: (s.inscrits.current / s.prospects.current) * 100 },
+    { label: 'Contrats', value: s.places.current, color: 'var(--green)', pct: (s.places.current / s.prospects.current) * 100 }
+  ];
+  html += `<div class="panel"><div class="panel-title"><i class="fa-solid fa-filter"></i> Entonnoir - ${s.name}</div><div class="funnel">`;
+  for (let i = 0; i < funnelSteps.length; i++) {
+    const step = funnelSteps[i];
+    const w = Math.max(step.pct, 14);
+    html += `<div class="funnel-step">
+      <span class="funnel-label">${step.label}</span>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" data-width="${w}%" style="background:${step.color}33;border:1px solid ${step.color}55;width:0">
+          <span class="funnel-bar-value">${formatNum(step.value)}</span>
+        </div>
+        ${i < funnelSteps.length - 1 ? '<span class="funnel-arrow"><i class="fa-solid fa-chevron-down"></i></span>' : ''}
+      </div>
+    </div>`;
+  }
+  html += `</div></div>`;
+
+  // Actions
+  const a = s.actions;
+  const actions = [
+    { label: 'Ruptures', value: a.ruptures, icon: 'fa-link-slash', color: 'var(--red)', bg: 'var(--red-dim)', cls: 'alert' },
+    { label: 'Paiements en attente', value: a.paiementAttente, icon: 'fa-credit-card', color: 'var(--amber)', bg: 'var(--amber-dim)', cls: 'warning' },
+    { label: 'PIAF a valider', value: a.piafValider, icon: 'fa-file-circle-check', color: 'var(--amber)', bg: 'var(--amber-dim)', cls: a.piafValider > 0 ? 'warning' : 'ok' },
+    { label: 'CV a valider', value: a.cvValider, icon: 'fa-file-lines', color: 'var(--cyan)', bg: 'var(--cyan-dim)', cls: a.cvValider > 0 ? 'info' : 'ok' },
+    { label: 'Candidats a rappeler', value: a.candidatRappeler, icon: 'fa-phone', color: 'var(--cyan)', bg: 'var(--cyan-dim)', cls: a.candidatRappeler > 0 ? 'info' : 'ok' },
+    { label: 'Alertes', value: a.alertes, icon: 'fa-bell', color: 'var(--green)', bg: 'var(--green-dim)', cls: 'ok' }
+  ];
+  html += `<div class="panel"><div class="panel-title"><i class="fa-solid fa-triangle-exclamation"></i> Actions - ${s.name}</div><div class="actions-grid">`;
+  for (const act of actions) {
+    html += `<div class="action-item ${act.cls}">
+      <div class="action-icon" style="background:${act.bg};color:${act.color}"><i class="fa-solid ${act.icon}"></i></div>
+      <div class="action-data">
+        <div class="action-value counter" data-target="${act.value}" style="color:${act.color}">0</div>
+        <div class="action-label">${act.label}</div>
+      </div>
+    </div>`;
+  }
+  html += `</div></div>`;
+  html += `</div>`;
+
+  return html;
+}
+
+// ---- Animation: count up numbers ----
+function animateCounters() {
+  const counters = document.querySelectorAll('.counter');
+  counters.forEach(el => {
+    const target = parseInt(el.dataset.target, 10) || 0;
+    const duration = 1200;
+    const frames = 40;
+    const interval = duration / frames;
+    let frame = 0;
+    function step() {
+      frame++;
+      const progress = Math.min(frame / frames, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = formatNum(Math.round(eased * target));
+      if (progress < 1) {
+        setTimeout(step, interval);
+      }
+    }
+    step();
+  });
+}
+
+// ---- Animation: gauge arcs ----
+function animateGauges() {
+  const arcs = document.querySelectorAll('.gauge-arc');
+  arcs.forEach(arc => {
+    const len = arc.getTotalLength ? arc.getTotalLength() : 1000;
+    arc.style.strokeDasharray = len;
+    arc.style.strokeDashoffset = len;
+    requestAnimationFrame(() => {
+      arc.style.transition = 'stroke-dashoffset 1.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      arc.style.strokeDashoffset = '0';
+    });
+  });
+}
+
+// ---- Animation: bar fills ----
+function animateBarFills() {
+  const fills = document.querySelectorAll('.cell-bar-fill[data-width]');
+  setTimeout(() => {
+    fills.forEach(f => { f.style.width = f.dataset.width; });
+  }, 300);
+}
+
+// ---- Animation: funnel bars ----
+function animateFunnelBars() {
+  const bars = document.querySelectorAll('.funnel-bar[data-width]');
+  setTimeout(() => {
+    bars.forEach((b, i) => {
+      setTimeout(() => { b.style.width = b.dataset.width; }, i * 120);
+    });
+  }, 400);
+}
+
+// ---- Render current view ----
+function render() {
+  const el = document.getElementById('dashboard');
+  if (currentView === 'group') {
+    el.innerHTML = renderGroupView();
+  } else {
+    el.innerHTML = renderSchoolView(currentView);
+  }
+  // Trigger animations
+  requestAnimationFrame(() => {
+    animateGauges();
+    animateBarFills();
+    animateFunnelBars();
+    observeAnimations();
+  });
+  setTimeout(() => {
+    animateCounters();
+  }, 350);
+}
+
+// ---- Clock ----
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('clock-time').textContent = `${h}:${m}:${s}`;
+  const days = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
+  const months = ['JAN', 'FEV', 'MAR', 'AVR', 'MAI', 'JUN', 'JUL', 'AOU', 'SEP', 'OCT', 'NOV', 'DEC'];
+  document.getElementById('clock-date').textContent =
+    `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+function updateLastUpdate() {
+  const now = new Date();
+  document.getElementById('last-update').textContent =
+    `MAJ: ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+// ---- Filiere expand/collapse ----
+document.getElementById('dashboard').addEventListener('click', function(e) {
+  const row = e.target.closest('.filiere-row.expandable');
+  if (!row) return;
+  const targetId = row.dataset.target;
+  if (!targetId) return;
+  const subRows = document.querySelectorAll('.sub-' + targetId);
+  const isExpanded = row.classList.toggle('expanded');
+  subRows.forEach(sr => {
+    sr.style.display = isExpanded ? 'table-row' : 'none';
+  });
+});
+
+// ---- View switcher ----
+document.querySelectorAll('.view-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentView = tab.dataset.view;
+    render();
+  });
+});
+
+// ---- IntersectionObserver for animate-in ----
+function observeAnimations() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '50px' });
+  document.querySelectorAll('.animate-in').forEach(el => {
+    observer.observe(el);
+    // Immediately show elements already in viewport
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      el.classList.add('visible');
+    }
+  });
+}
+
+// ============================================================
+//  LIVE DATA REFRESH - Connexion a /api/cockpit-data
+// ============================================================
+
+const LIVE_REFRESH_INTERVAL = 120000; // 2 minutes (le scraping CRM est a 10min)
+let liveEnabled = false;
+let lastLiveUpdate = null;
+
+// Transformer les donnees API en format dashboardData
+function mapApiToData(apiData) {
+  if (!apiData || !apiData.schools) return null;
+
+  const ns = apiData.schools.clem;
+  const ws = apiData.schools.will;
+
+  function safeNum(v) { return typeof v === 'number' ? v : (parseInt(v) || 0); }
+
+  function mapSchool(raw, schoolKey) {
+    if (!raw) return null;
+    const d = {};
+    d.prospects = {
+      current: raw.totalProspection?.current || raw.prospects?.current || 0,
+      objective: raw.totalProspection?.objective || raw.prospects?.objective || 0,
+      month: raw.prospects?.month || 0
+    };
+    // Candidats : yearTotal du scraping, objectif depuis les donnees statiques
+    const existingCandObj = dashboardData.schools[schoolKey]?.candidats?.objective || 0;
+    d.candidats = {
+      current: raw.candidats?.yearTotal || 0,
+      objective: existingCandObj,
+      month: raw.candidats?.month || 0
+    };
+    // Admis : le scraping donne admisTotal mais pas l'objectif
+    // On garde l'objectif des donnees statiques si le live ne le fournit pas
+    const existingAdmisObj = dashboardData.schools[schoolKey]?.admis?.objective || 0;
+    d.admis = {
+      current: raw.admisTotal || raw.admis?.current || 0,
+      objective: raw.admis?.objective || existingAdmisObj,
+      month: raw.admis?.month || 0
+    };
+    d.inscrits = {
+      current: raw.totalInscrits?.current || raw.inscrits?.yearTotal || 0,
+      objective: raw.totalInscrits?.objective || 0
+    };
+    d.offres = {
+      current: raw.totalOffres?.current || raw.offres?.current || 0,
+      objective: raw.totalOffres?.objective || raw.offres?.objective || 0,
+      month: raw.offres?.month || 0
+    };
+    d.places = {
+      current: raw.totalPlacements?.current || raw.placesDetail?.current || raw.places?.current || 0,
+      objective: raw.totalPlacements?.objective || raw.placesDetail?.objective || raw.places?.objective || 0
+    };
+    d.abandons = raw.abandonsTotal || raw.abandons?.yearTotal || 0;
+    d.ruptures = raw.pedago?.rupturesPedago || 0;
+    d.projection = raw.projection || 0;
+    d.etudiants = raw.pedago?.etudiants || 0;
+    d.contratsAlternance = raw.pedago?.contratsAlternance || 0;
+    d.formationInitiale = raw.pedago?.formationInitiale || 0;
+    d.montants = {
+      current: raw.montants?.current || 0,
+      objective: raw.montants?.objective || 0
+    };
+    d.packToutBenef = raw.packToutBenef || 0;
+    d.initiaux = raw.initiaux || 0;
+    d.restants = raw.restants || 0;
+
+    // Actions
+    d.actions = {
+      alertes: raw.actions?.alertes_traiter || 0,
+      ruptures: raw.actions?.rupture_traiter || 0,
+      prospectsRappeler: raw.actions?.prospects_rappeler || 0,
+      candidatRappeler: raw.actions?.candidat_rappeler || 0,
+      entrepriseRappeler: raw.actions?.entreprise_rappeler || 0,
+      piafValider: raw.actions?.piaf_valider || 0,
+      paiementAttente: raw.actions?.paiement_en_attente || 0,
+      cvValider: raw.actions?.cv_valider || 0
+    };
+
+    // Formations (garder les sous-formations existantes, mettre a jour les chiffres)
+    const existingSchool = dashboardData.schools[schoolKey];
+    if (raw.formations && raw.formations.length > 0 && existingSchool) {
+      d.formations = existingSchool.formations.map(ef => {
+        // Trouver la formation correspondante dans les donnees API
+        const apiF = raw.formations.find(af =>
+          af.name.toUpperCase().includes(ef.name.toUpperCase()) ||
+          ef.name.toUpperCase().includes(af.name.replace(/\s+/g,' ').toUpperCase())
+        );
+        if (apiF) {
+          return {
+            ...ef,
+            candidats: apiF.candidats,
+            admis: apiF.admis,
+            restants: apiF.restants,
+            montants: apiF.montants,
+            abandons: apiF.abandons || 0
+          };
+        }
+        return ef;
+      });
+    } else {
+      d.formations = existingSchool?.formations || [];
+    }
+
+    // Garder les detailFormations existantes (catalogue statique)
+    d.detailFormations = existingSchool?.detailFormations || [];
+
+    return d;
+  }
+
+  const mappedWill = mapSchool(ws, 'will');
+  const mappedCLEM = mapSchool(ns, 'clem');
+
+  // Mettre a jour dashboardData in-place
+  if (mappedWill) {
+    dashboardData.schools.will = {
+      ...dashboardData.schools.will,
+      ...mappedWill,
+      name: 'CLEM',
+      color: '#ff0066'
+    };
+  }
+  if (mappedCLEM) {
+    dashboardData.schools.clem = {
+      ...dashboardData.schools.clem,
+      ...mappedCLEM,
+      name: 'CLEM',
+      color: '#00d4ff'
+    };
+  }
+
+  // Recalculer les totaux groupe
+  const w = dashboardData.schools.will;
+  const n = dashboardData.schools.clem;
+  dashboardData.group = {
+    prospects: {
+      current: (w.prospects?.current || 0) + (n.prospects?.current || 0),
+      objective: (w.prospects?.objective || 0) + (n.prospects?.objective || 0),
+      month: (w.prospects?.month || 0) + (n.prospects?.month || 0)
+    },
+    candidats: {
+      current: (w.candidats?.current || 0) + (n.candidats?.current || 0),
+      objective: (w.candidats?.objective || 0) + (n.candidats?.objective || 0),
+      month: (w.candidats?.month || 0) + (n.candidats?.month || 0)
+    },
+    admis: {
+      current: (w.admis?.current || 0) + (n.admis?.current || 0),
+      objective: (w.admis?.objective || 0) + (n.admis?.objective || 0),
+      month: (w.admis?.month || 0) + (n.admis?.month || 0)
+    },
+    inscrits: {
+      current: (w.inscrits?.current || 0) + (n.inscrits?.current || 0),
+      objective: (w.inscrits?.objective || 0) + (n.inscrits?.objective || 0)
+    },
+    contrats: {
+      current: (w.places?.current || 0) + (n.places?.current || 0),
+      objective: (w.places?.objective || 0) + (n.places?.objective || 0)
+    },
+    offres: {
+      current: (w.offres?.current || 0) + (n.offres?.current || 0),
+      objective: (w.offres?.objective || 0) + (n.offres?.objective || 0),
+      month: (w.offres?.month || 0) + (n.offres?.month || 0)
+    },
+    places: {
+      current: (w.places?.current || 0) + (n.places?.current || 0),
+      objective: (w.places?.objective || 0) + (n.places?.objective || 0)
+    },
+    ruptures: (w.ruptures || 0) + (n.ruptures || 0),
+    abandons: (w.abandons || 0) + (n.abandons || 0),
+    projection: (w.projection || 0) + (n.projection || 0),
+    etudiants: (w.etudiants || 0) + (n.etudiants || 0),
+    nbFormations: dashboardData.group.nbFormations
+  };
+
+  dashboardData.lastUpdate = apiData.lastUpdate;
+  return true;
+}
+
+// Fetch live data from API
+async function fetchLiveData() {
+  try {
+    const res = await fetch('/api/cockpit-data');
+    const json = await res.json();
+
+    if (json.success && json.data) {
+      const updated = mapApiToData(json.data);
+      if (updated) {
+        lastLiveUpdate = new Date(json.data.lastUpdate);
+        liveEnabled = true;
+
+        // Update the live indicator
+        const liveIndicator = document.querySelector('.live-indicator');
+        if (liveIndicator) {
+          liveIndicator.innerHTML = '<span class="live-dot"></span> DONNEES LIVE';
+          liveIndicator.style.opacity = '1';
+        }
+
+        // Update last update time
+        if (lastLiveUpdate) {
+          const h = String(lastLiveUpdate.getHours()).padStart(2, '0');
+          const m = String(lastLiveUpdate.getMinutes()).padStart(2, '0');
+          document.getElementById('last-update').textContent = `MAJ CRM: ${h}:${m}`;
+        }
+
+        // Re-render with flash effect
+        render();
+
+        // Flash effect on panels to show update
+        document.querySelectorAll('.gauge-card, .stat-mini, .panel').forEach(el => {
+          el.classList.add('data-refresh');
+          setTimeout(() => el.classList.remove('data-refresh'), 1500);
+        });
+
+        console.log('[Cockpit] Donnees live mises a jour:', lastLiveUpdate.toLocaleTimeString('fr-FR'));
+      }
+    } else {
+      console.warn('[Cockpit] API reponse sans donnees, utilisation des donnees statiques');
+      document.getElementById('last-update').textContent = 'MAJ: statique';
+    }
+  } catch (err) {
+    console.warn('[Cockpit] Erreur fetch live data:', err.message, '- utilisation des donnees statiques');
+    // En cas d'erreur reseau, on garde les donnees statiques
+    const liveIndicator = document.querySelector('.live-indicator');
+    if (liveIndicator) {
+      liveIndicator.innerHTML = '<span class="live-dot" style="background:var(--amber)"></span> HORS LIGNE';
+    }
+  }
+}
+
+// ---- Init ----
+updateClock();
+setInterval(updateClock, 1000);
+updateLastUpdate();
+
+// Render d'abord avec les donnees statiques (affichage immediat)
+render();
+
+// Puis tenter le fetch live
+setTimeout(async () => {
+  await fetchLiveData();
+  // Refresh auto toutes les 2 minutes
+  setInterval(fetchLiveData, LIVE_REFRESH_INTERVAL);
+}, 1000);
+</script>
+</body>
+</html>

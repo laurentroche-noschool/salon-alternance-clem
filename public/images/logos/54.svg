@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Fond bleu marine officiel Coldwell Banker -->
+  <rect width="200" height="200" fill="#1B2E6E" rx="12"/>
+  <!-- Bordure blanche intérieure -->
+  <rect x="8" y="8" width="184" height="184" fill="none" stroke="white" stroke-width="3.5" rx="7"/>
+  <!-- Étoile blanche centrée en haut -->
+  <polygon points="100,22 104.8,36.9 120.5,36.9 108.0,45.6 112.9,60.5 100,51.8 87.1,60.5 92.0,45.6 79.5,36.9 95.2,36.9"
+           fill="white"/>
+  <!-- C -->
+  <text x="52" y="148"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="108"
+        font-weight="700"
+        fill="white"
+        letter-spacing="-6">C</text>
+  <!-- B -->
+  <text x="106" y="148"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="108"
+        font-weight="700"
+        fill="white">B</text>
+  <!-- Registre ® -->
+  <text x="169" y="88"
+        font-family="Arial, sans-serif"
+        font-size="16"
+        fill="white"
+        opacity="0.85">®</text>
+</svg>

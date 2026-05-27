@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+.wwebjs_cache/
+data/.wwebjs_auth/
+data/parcoursup-config.json
+.claude/settings.local.json

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 70">
+  <rect width="200" height="70" fill="#1b3fa6" rx="6"/>
+  <rect x="14" y="22" width="22" height="4" rx="2" fill="#f5d033"/>
+  <rect x="14" y="31" width="22" height="4" rx="2" fill="#f5d033"/>
+  <rect x="14" y="40" width="22" height="4" rx="2" fill="#f5d033"/>
+  <text x="46" y="43" font-family="Arial,sans-serif" font-weight="800" font-size="26" fill="white" letter-spacing="1">NETCO</text>
+</svg>

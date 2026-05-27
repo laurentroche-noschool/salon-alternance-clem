@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Jobs Alternance — CLEM Formation</title>
+  <link rel="stylesheet" href="/css/style.css?v=20260327a" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <!-- ===== ÉCRAN D'ACCUEIL ===== -->
+  <div id="screen-home" class="screen active">
+    <div class="home-bg"></div>
+    <div class="home-content">
+
+      <!-- Logos -->
+      <div class="schools-logos">
+        <img src="/images/logo-clem.svg" alt="CLEM" class="school-logo clem-logo" />
+        <div class="schools-separator clem-logo"></div>
+        <img src="/images/logo-clem.svg" alt="CLEM" class="school-logo clem-logo" />
+      </div>
+
+      <!-- Titre -->
+      <p class="home-event-tag">Job Dating · Bordeaux 2026</p>
+      <h1 class="home-title">Jobs <span class="home-title-accent">Alternance</span></h1>
+      <p class="home-desc">Trouvez votre entreprise idéale et décrochez votre alternance</p>
+
+      <!-- Boutons accès -->
+      <div class="home-buttons">
+
+        <button class="btn-home btn-student" onclick="showStudentPin()">
+          <div class="btn-home-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+          <div class="btn-home-info">
+            <span class="btn-home-label">Candidat(e)</span>
+            <span class="btn-home-sub">Accédez aux entreprises participantes</span>
+          </div>
+          <span class="btn-home-arrow"><i class="fa-solid fa-chevron-right"></i></span>
+        </button>
+
+        <button class="btn-home btn-entreprise" onclick="enterEntrepriseMode()">
+          <div class="btn-home-icon"><i class="fa-solid fa-briefcase"></i></div>
+          <div class="btn-home-info">
+            <span class="btn-home-label">Entreprise</span>
+            <span class="btn-home-sub">Gérez votre stand et vos candidats</span>
+          </div>
+          <span class="btn-home-arrow"><i class="fa-solid fa-chevron-right"></i></span>
+        </button>
+
+        <button class="btn-home btn-cre" onclick="enterCREMode()">
+          <div class="btn-home-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+          <div class="btn-home-info">
+            <span class="btn-home-label">CRE</span>
+            <span class="btn-home-sub">Gestion et validation des candidats</span>
+          </div>
+          <span class="btn-home-arrow"><i class="fa-solid fa-chevron-right"></i></span>
+        </button>
+
+        <button class="btn-home btn-admin" onclick="enterAdminMode()">
+          <div class="btn-home-icon"><i class="fa-solid fa-gauge-high"></i></div>
+          <div class="btn-home-info">
+            <span class="btn-home-label">Admin</span>
+            <span class="btn-home-sub">Tableau de bord & statistiques</span>
+          </div>
+          <span class="btn-home-arrow"><i class="fa-solid fa-chevron-right"></i></span>
+        </button>
+
+      </div>
+
+      <!-- Inscription sur place -->
+      <div class="home-selfregister-wrap">
+        <button class="btn-selfregister-home" onclick="enterSelfRegisterMode()">
+          <span class="btn-sr-icon">✍️</span>
+          <div class="btn-sr-text">
+            <span class="btn-sr-label">Je m'inscris</span>
+            <span class="btn-sr-sub">Tu veux une alternance ? Inscris-toi vite pour profiter de notre JOB DATING !</span>
+          </div>
+          <span class="btn-sr-arrow">→</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== VUE ÉTUDIANT ===== -->
+  <div id="screen-student" class="screen">
+    <header class="app-header student-header">
+      <div class="header-left-actions">
+        <button class="back-btn" onclick="goHome()">← Accueil</button>
+        <button class="btn-plan-salon" onclick="openPlanSalon()">🗺️ Plan du salon</button>
+      </div>
+      <div class="header-logos">
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo" />
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo clem-logo" />
+      </div>
+      <h2 class="header-title">Jobs Alternance</h2>
+    </header>
+
+    <!-- Modal Plan du Salon -->
+    <div id="modal-plan-salon" class="modal-overlay" onclick="if(event.target===this)closePlanSalon()" style="display:none;z-index:2000">
+      <div class="modal-box plan-salon-box">
+        <button class="modal-close" onclick="closePlanSalon()">✕</button>
+        <h3 class="plan-salon-title">🗺️ Plan du Salon</h3>
+        <p class="plan-salon-subtitle">Retrouvez l'emplacement des stands des entreprises</p>
+        <div class="plan-salon-content" id="plan-salon-content">
+          <iframe src="/images/plan-salon.pdf" class="plan-salon-iframe" title="Plan du Salon"></iframe>
+          <div class="plan-salon-dl">
+            <a href="/images/plan-salon.pdf" target="_blank" class="btn-plan-dl">📥 Ouvrir / Télécharger le plan</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglets Candidat -->
+    <div class="student-view-tabs">
+      <button class="student-view-tab active" id="stab-entreprises" onclick="switchStudentView('entreprises')">🏢 Entreprises</button>
+      <button class="student-view-tab" id="stab-offres" onclick="switchStudentView('offres')">💼 Offres Alternance</button>
+      <button class="student-view-tab" id="stab-entretiens" onclick="switchStudentView('entretiens')">🤝 Mes entretiens</button>
+    </div>
+
+    <!-- Vue Entreprises -->
+    <div id="student-companies-view">
+      <div class="filter-bar">
+        <div class="filter-scroll">
+          <button class="filter-btn active" data-filiere="all" onclick="filterFiliere('all', this)">
+            Toutes <span class="filter-count" id="count-all"></span>
+          </button>
+          <button class="filter-btn" data-filiere="COMMERCE NS" onclick="filterFiliere('COMMERCE NS', this)">
+            Commerce CLEM <span class="filter-count" id="count-COMMERCE-NS"></span>
+          </button>
+          <button class="filter-btn" data-filiere="COMMERCE CLEM" onclick="filterFiliere('COMMERCE CLEM', this)">
+            Commerce Will <span class="filter-count" id="count-COMMERCE-WILL"></span>
+          </button>
+          <button class="filter-btn" data-filiere="IMMOBILIER" onclick="filterFiliere('IMMOBILIER', this)">
+            Immobilier <span class="filter-count" id="count-IMMOBILIER"></span>
+          </button>
+          <button class="filter-btn" data-filiere="BANQUE / ASSURANCE" onclick="filterFiliere('BANQUE / ASSURANCE', this)">
+            Banque / Assurance <span class="filter-count" id="count-BANQUE"></span>
+          </button>
+          <button class="filter-btn" data-filiere="MARKETING / COM / SOCIAL" onclick="filterFiliere('MARKETING / COM / SOCIAL', this)">
+            Marketing / Digital &amp; Social <span class="filter-count" id="count-MARKETING"></span>
+          </button>
+          <button class="filter-btn" data-filiere="RH / TOURISME" onclick="filterFiliere('RH / TOURISME', this)">
+            RH / Tourisme <span class="filter-count" id="count-RH"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="search-bar-wrap">
+        <div class="search-hint-row">
+          <input type="text" id="search-input" placeholder="🔍 Rechercher..." class="search-input search-input-compact" oninput="searchCompanies()" />
+          <p class="search-hint-text">🚀 <strong>Clique sur chaque entreprise qui t'intéresse — découvre leurs postes, leurs tips d'entretien et mets toutes les chances de ton côté pour décrocher ton alternance !</strong></p>
+        </div>
+      </div>
+
+      <div id="companies-grid" class="companies-grid"></div>
+    </div>
+
+    <!-- Vue Mes entretiens (lecture seule) -->
+    <div id="student-entretiens-view" style="display:none">
+      <div class="offres-header">
+        <div class="offres-title-row">
+          <h3 class="offres-title">🤝 Candidats &amp; Entreprises</h3>
+          <input type="text" id="student-entretiens-search" class="offres-search" placeholder="🔍 Rechercher un candidat ou une entreprise…" oninput="filterStudentEntretiens(this.value)" />
+        </div>
+      </div>
+      <div id="student-entretiens-container" class="entretiens-table-wrap">
+        <div class="empty-state" style="padding:2rem;text-align:center">Chargement…</div>
+      </div>
+    </div>
+
+    <!-- Vue Offres Alternance (lecture seule) -->
+    <div id="student-offres-view" style="display:none">
+      <div class="offres-header">
+        <div class="offres-title-row">
+          <h3 class="offres-title">💼 Offres Alternance par entreprise</h3>
+          <input type="text" id="student-offres-search" class="offres-search" placeholder="🔍 Rechercher poste ou entreprise…" oninput="filterStudentOffres(this.value)" />
+        </div>
+      </div>
+      <div id="student-offres-container" class="offres-container">
+        <div class="empty-state" style="padding:2rem;text-align:center">Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL DÉTAIL ENTREPRISE (Étudiant) ===== -->
+  <div id="modal-student" class="modal-overlay" onclick="closeModalStudent(event)">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeStudentModal()">✕</button>
+
+      <div class="modal-header">
+        <div class="modal-logo-wrap">
+          <img id="modal-logo" src="" alt="" class="modal-logo" onerror="this.style.display='none'; document.getElementById('modal-logo-fallback').style.display='flex'" />
+          <div id="modal-logo-fallback" class="modal-logo-fallback" style="display:none"></div>
+        </div>
+        <div class="modal-header-info">
+          <h2 id="modal-company-name"></h2>
+          <span id="modal-filiere-badge" class="filiere-badge"></span>
+          <span id="modal-secteur" class="modal-secteur"></span>
+        </div>
+      </div>
+
+      <!-- Stand -->
+      <div id="modal-stand" class="stand-block">
+        <div class="stand-icon">📍</div>
+        <div class="stand-info">
+          <div class="stand-label">Emplacement du stand</div>
+          <div id="stand-location" class="stand-location"></div>
+        </div>
+        <a id="modal-website" href="#" target="_blank" class="website-btn">🌐 Site web</a>
+      </div>
+
+      <!-- Tabs -->
+      <div class="detail-tabs">
+        <button class="tab-btn active" onclick="switchTab('presentation', this)">Présentation</button>
+        <button class="tab-btn" onclick="switchTab('valeurs', this)">Valeurs & Missions</button>
+        <button class="tab-btn" onclick="switchTab('questions', this)">Questions d'entretien</button>
+        <button class="tab-btn" onclick="switchTab('softskills', this)">💡 Soft Skills</button>
+      </div>
+
+      <!-- Tab: Présentation -->
+      <div id="tab-presentation" class="tab-content active">
+        <div class="info-block">
+          <h4>À propos</h4>
+          <p id="modal-description"></p>
+        </div>
+        <div class="info-block">
+          <h4>Histoire</h4>
+          <p id="modal-histoire"></p>
+        </div>
+        <div class="info-block">
+          <h4>Chiffres clés</h4>
+          <p id="modal-chiffres"></p>
+        </div>
+        <div class="info-block">
+          <h4>Secteur d'activité</h4>
+          <p id="modal-secteur-detail"></p>
+        </div>
+        <div class="info-block">
+          <h4>Principaux concurrents</h4>
+          <div id="modal-concurrents" class="tags-list"></div>
+        </div>
+        <div class="info-block">
+          <h4>Recrutement</h4>
+          <p id="modal-recrutement"></p>
+        </div>
+      </div>
+
+      <!-- Tab: Valeurs & Missions -->
+      <div id="tab-valeurs" class="tab-content">
+        <div class="info-block">
+          <h4>Valeurs</h4>
+          <div id="modal-valeurs" class="tags-list valeurs-tags"></div>
+        </div>
+        <div class="info-block">
+          <h4>Missions</h4>
+          <ul id="modal-missions" class="missions-list"></ul>
+        </div>
+      </div>
+
+      <!-- Tab: Questions d'entretien -->
+      <div id="tab-questions" class="tab-content">
+        <div class="questions-intro">
+          <span class="questions-icon">💡</span>
+          <p>Questions que le recruteur pourrait vous poser. Préparez vos réponses !</p>
+        </div>
+        <div class="info-block">
+          <h4>Questions RH / Comportementales</h4>
+          <ol id="modal-questions-rh" class="questions-list"></ol>
+        </div>
+        <div class="info-block">
+          <h4>Questions Opérationnelles / Métier</h4>
+          <ol id="modal-questions-op" class="questions-list"></ol>
+        </div>
+      </div>
+
+      <!-- Tab: Soft Skills -->
+      <div id="tab-softskills" class="tab-content">
+        <div class="softskills-intro">
+          <span class="softskills-icon">🌟</span>
+          <p>Compétences comportementales attendues par ce recruteur. <strong>Valorisez-les concrètement</strong> avec des exemples lors de votre entretien !</p>
+        </div>
+        <div id="modal-softskills" class="softskills-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== POPUP DÉTAIL ADMIN ===== -->
+  <div id="admin-detail-overlay" onclick="closeAdminDetail()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;"></div>
+  <div id="admin-detail-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2001;background:#fff;border-radius:16px;width:min(700px,96vw);max-height:80vh;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div class="adp-header">
+      <div>
+        <div id="admin-detail-title" class="adp-title"></div>
+        <div id="admin-detail-subtitle" class="adp-subtitle"></div>
+      </div>
+      <button class="adp-close" onclick="closeAdminDetail()">✕</button>
+    </div>
+    <div id="admin-detail-list" class="adp-list"></div>
+  </div>
+
+  <!-- ===== VUE ADMIN ===== -->
+  <div id="screen-admin" class="screen">
+    <header class="app-header admin-header">
+      <button class="back-btn" onclick="goHome()">← Accueil</button>
+      <div class="header-logos">
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo" />
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo clem-logo" />
+      </div>
+      <h2 class="header-title">⚙️ Tableau de bord Admin</h2>
+    </header>
+
+    <!-- Login Admin -->
+    <div id="admin-login" class="admin-login-wrap">
+      <div class="admin-login-box">
+        <div class="admin-login-icon">⚙️</div>
+        <h3>Accès Administrateur</h3>
+        <p>Synthèse complète du Jobs Alternance</p>
+        <div class="pin-input-wrap">
+          <input type="password" id="admin-pin-input" placeholder="Code administrateur" class="pin-input"
+                 onkeydown="if(event.key==='Enter') verifyAdmin()" />
+          <button class="btn-pin-eye" type="button" onclick="togglePinVisibility('admin-pin-input', this)" title="Afficher / masquer">👁</button>
+        </div>
+        <button class="btn-primary btn-admin-connect" onclick="verifyAdmin()">Connexion</button>
+        <p id="admin-login-error" class="error-msg" style="display:none">Code incorrect.</p>
+      </div>
+    </div>
+
+    <!-- Dashboard Admin -->
+    <div id="admin-dashboard" style="display:none" class="admin-dashboard">
+
+      <!-- Barre actions -->
+      <div class="admin-actions-bar">
+        <button class="btn-refresh-stats" onclick="loadAdminStats()">🔄 Actualiser</button>
+        <span id="admin-last-update" class="admin-last-update"></span>
+      </div>
+
+      <!-- KPIs globaux -->
+      <div class="admin-section">
+        <h3 class="admin-section-title" onclick="toggleAdminSection(this)">
+          <span>📊 Chiffres clés du salon</span><span class="section-arrow">▾</span>
+        </h3>
+        <div class="admin-section-body">
+          <div class="admin-kpi-grid" id="admin-kpi-grid"></div>
+        </div>
+      </div>
+
+      <!-- Notations globales -->
+      <div class="admin-section">
+        <h3 class="admin-section-title" onclick="toggleAdminSection(this)">
+          <span>🏆 Résultats des entretiens</span><span class="section-arrow">▾</span>
+        </h3>
+        <div class="admin-section-body">
+          <div class="admin-ratings-grid" id="admin-ratings-grid"></div>
+        </div>
+      </div>
+
+      <!-- Répartition par filière -->
+      <div class="admin-section">
+        <h3 class="admin-section-title" onclick="toggleAdminSection(this)">
+          <span>📁 Répartition par filière</span><span class="section-arrow">▾</span>
+        </h3>
+        <div class="admin-section-body">
+          <div id="admin-filieres-list" class="admin-filieres-list"></div>
+        </div>
+      </div>
+
+      <!-- Top entreprises -->
+      <div class="admin-section">
+        <h3 class="admin-section-title" onclick="toggleAdminSection(this)">
+          <span>🥇 Top entreprises (par nb de candidats)</span><span class="section-arrow">▾</span>
+        </h3>
+        <div class="admin-section-body">
+          <div id="admin-top-companies" class="admin-top-companies"></div>
+        </div>
+      </div>
+
+      <!-- Tableau détaillé entreprises — replié par défaut -->
+      <div class="admin-section collapsed" id="section-entreprises">
+        <h3 class="admin-section-title" onclick="toggleAdminSection(this)">
+          <span>📋 Détail par entreprise</span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <button class="btn-export-csv" onclick="event.stopPropagation();exportAdminCompanies()" style="font-size:0.75rem;padding:0.25rem 0.65rem">📥 Excel</button>
+            <span class="section-arrow">▾</span>
+          </span>
+        </h3>
+        <div class="admin-section-body">
+          <div class="admin-table-filters">
+            <input type="text" id="admin-filter-search" class="admin-filter-input" placeholder="🔍 Rechercher une entreprise…" oninput="filterAdminTable()" />
+            <select id="admin-filter-filiere" class="admin-filter-select" onchange="filterAdminTable()">
+              <option value="all">Toutes les filières</option>
+              <option value="COMMERCE NS">Commerce CLEM</option>
+              <option value="COMMERCE CLEM">Commerce Will</option>
+              <option value="IMMOBILIER">Immobilier</option>
+              <option value="BANQUE">Banque</option>
+              <option value="MARKETING">Marketing / Digital &amp; Social</option>
+              <option value="RH">RH</option>
+            </select>
+            <div class="admin-filter-btns">
+              <button class="admin-filter-btn active" data-col="all"       onclick="setAdminColFilter('all',this)">Tous</button>
+              <button class="admin-filter-btn" data-col="hire"             onclick="setAdminColFilter('hire',this)">❤️ Embauche</button>
+              <button class="admin-filter-btn" data-col="retained"         onclick="setAdminColFilter('retained',this)">😊 Retenu</button>
+              <button class="admin-filter-btn" data-col="maybe"            onclick="setAdminColFilter('maybe',this)">🟠 À voir</button>
+              <button class="admin-filter-btn" data-col="refused"          onclick="setAdminColFilter('refused',this)">😡 Refusé</button>
+              <button class="admin-filter-btn" data-col="met"              onclick="setAdminColFilter('met',this)">🤝 Rencontrés</button>
+              <button class="admin-filter-btn" data-col="spontaneous"      onclick="setAdminColFilter('spontaneous',this)">➕ Spontanées</button>
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table id="admin-table" class="admin-table">
+              <thead>
+                <tr>
+                  <th>Entreprise</th><th>Filière</th>
+                  <th class="th-num">Candidats</th>
+                  <th class="th-num">Spontanées</th>
+                  <th class="th-num">Rencontrés</th>
+                  <th class="th-emoji">❤️<span class="th-emoji-label">Embauche</span></th>
+                  <th class="th-emoji">😊<span class="th-emoji-label">Retenu</span></th>
+                  <th class="th-emoji">🟠<span class="th-emoji-label">À voir</span></th>
+                  <th class="th-emoji">😡<span class="th-emoji-label">Refusé</span></th>
+                  <th class="th-num"></th>
+                </tr>
+              </thead>
+              <tbody id="admin-table-body"></tbody>
+            </table>
+            <p id="admin-table-empty" class="admin-table-empty" style="display:none">Aucune entreprise ne correspond.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inscriptions sur place (cube Je m'inscris) — replié par défaut -->
+      <div class="admin-section collapsed" id="section-selfregs">
+        <h3 class="admin-section-title" onclick="toggleAdminSection(this)">
+          <span>✍️ Inscriptions sur place <span id="admin-sr-badge" class="count-badge" style="font-size:0.75rem;vertical-align:middle;margin-left:0.4rem"></span></span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <button class="btn-export-csv" onclick="event.stopPropagation();exportAdminSelfRegs()" style="font-size:0.75rem;padding:0.25rem 0.65rem">📥 Excel</button>
+            <span class="section-arrow">▾</span>
+          </span>
+        </h3>
+        <div class="admin-section-body">
+          <div id="admin-sr-stats" class="admin-sr-stats"></div>
+          <div class="admin-table-filters">
+            <input type="text" id="admin-sr-search" class="admin-filter-input" placeholder="🔍 Rechercher par nom, email, domaine…" oninput="renderAdminSelfRegs()" />
+            <div class="admin-filter-btns">
+              <button class="admin-filter-btn active" data-sr-status="all"       onclick="setSrStatusFilter('all',this)">Tous</button>
+              <button class="admin-filter-btn"         data-sr-status="pending"   onclick="setSrStatusFilter('pending',this)">⏳ En attente</button>
+              <button class="admin-filter-btn"         data-sr-status="validated" onclick="setSrStatusFilter('validated',this)">✅ Validés</button>
+              <button class="admin-filter-btn"         data-sr-status="rejected"  onclick="setSrStatusFilter('rejected',this)">❌ Refusés</button>
+            </div>
+          </div>
+          <div class="admin-table-wrap" id="admin-sr-table-wrap">
+            <p class="admin-table-empty">Cliquez sur la section pour charger les données</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau détaillé étudiants — replié par défaut -->
+      <div class="admin-section collapsed" id="section-etudiants">
+        <h3 class="admin-section-title" onclick="toggleAdminSection(this)">
+          <span>🎓 Détail par candidat(e)</span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <button class="btn-export-csv" onclick="event.stopPropagation();exportAdminCandidates()" style="font-size:0.75rem;padding:0.25rem 0.65rem">📥 Excel</button>
+            <span class="section-arrow">▾</span>
+          </span>
+        </h3>
+        <div class="admin-section-body">
+          <div class="admin-table-filters">
+            <input type="text" id="admin-student-search" class="admin-filter-input" placeholder="🔍 Rechercher un(e) candidat(e)…" oninput="filterAdminStudents()" />
+            <select id="admin-student-filiere" class="admin-filter-select" onchange="filterAdminStudents()">
+              <option value="all">Toutes les filières</option>
+              <option value="COMMERCE NS">Commerce CLEM</option>
+              <option value="COMMERCE CLEM">Commerce Will</option>
+              <option value="IMMOBILIER">Immobilier</option>
+              <option value="BANQUE">Banque</option>
+              <option value="MARKETING">Marketing / Digital &amp; Social</option>
+              <option value="RH">RH</option>
+            </select>
+            <div class="admin-filter-btns">
+              <button class="admin-filter-btn active" id="sf-all"      onclick="setStudentColFilter('all',this)">Tous</button>
+              <button class="admin-filter-btn" id="sf-hire"            onclick="setStudentColFilter('hire',this)">❤️ Embauché</button>
+              <button class="admin-filter-btn" id="sf-retained"        onclick="setStudentColFilter('retained',this)">😊 Retenu</button>
+              <button class="admin-filter-btn" id="sf-maybe"           onclick="setStudentColFilter('maybe',this)">🟠 À voir</button>
+              <button class="admin-filter-btn" id="sf-refused"         onclick="setStudentColFilter('refused',this)">😡 Refusé</button>
+              <button class="admin-filter-btn" id="sf-met"             onclick="setStudentColFilter('met',this)">🤝 Rencontré</button>
+            </div>
+          </div>
+          <div class="admin-table-wrap" id="admin-students-wrap">
+            <p class="admin-table-empty">Cliquez sur la section pour charger les données</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== VUE ENTREPRISE ===== -->
+  <div id="screen-entreprise" class="screen">
+    <header class="app-header ent-header">
+      <button class="back-btn" id="ent-back-btn" onclick="goHome()">← Accueil</button>
+      <div class="header-logos">
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo" />
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo clem-logo" />
+      </div>
+      <h2 class="header-title">Espace Entreprise</h2>
+    </header>
+
+    <!-- Étape 1 : Login -->
+    <div id="ent-login" class="ent-login-wrap">
+      <div class="ent-login-box">
+        <div class="ent-login-icon">🏢</div>
+        <h3>Accès Entreprise</h3>
+        <p>Saisissez votre code d'accès pour consulter et évaluer vos candidats</p>
+        <div class="pin-input-wrap">
+          <input type="password" id="ent-pin-input" placeholder="Code d'accès" class="pin-input"
+                 onkeydown="if(event.key==='Enter') verifyEntreprise()" />
+          <button class="btn-pin-eye" type="button" onclick="togglePinVisibility('ent-pin-input', this)" title="Afficher / masquer">👁</button>
+        </div>
+        <button class="btn-primary btn-ent-connect" onclick="verifyEntreprise()">Connexion</button>
+        <p id="ent-login-error" class="error-msg" style="display:none">Code incorrect. Réessayez.</p>
+      </div>
+    </div>
+
+    <!-- Étape 2 : Sélection entreprise -->
+    <div id="ent-selection" style="display:none">
+      <div class="ent-selection-header">
+        <h3>Sélectionnez votre entreprise</h3>
+        <p class="ent-selection-desc">Sélectionnez votre entreprise pour accéder à votre espace et suivre votre recrutement en temps réel</p>
+        <input type="text" id="ent-search" placeholder="🔍 Rechercher votre entreprise..." class="search-input ent-search-input" oninput="filterEntSelection()" />
+      </div>
+      <div id="ent-companies-grid" class="companies-grid"></div>
+    </div>
+
+    <!-- Étape 3 : Dashboard entreprise -->
+    <div id="ent-dashboard" style="display:none">
+
+      <!-- En-tête entreprise -->
+      <div class="ent-company-header">
+        <div class="ent-company-logo-wrap">
+          <img id="ent-modal-logo" src="" alt="" class="ent-company-logo"
+               onerror="this.style.display='none'; document.getElementById('ent-modal-logo-fallback').style.display='flex'" />
+          <div id="ent-modal-logo-fallback" class="ent-company-logo-fallback" style="display:none"></div>
+        </div>
+        <div class="ent-company-info">
+          <h2 id="ent-company-name"></h2>
+          <span id="ent-filiere-badge" class="filiere-badge"></span>
+        </div>
+      </div>
+
+      <!-- Candidature spontanée -->
+      <div class="ent-spontaneous-block">
+        <button class="ent-spontaneous-toggle" onclick="toggleSpontaneousForm()">
+          <span>➕</span> Ajouter une candidature spontanée
+        </button>
+        <div id="ent-spontaneous-form" style="display:none" class="ent-spontaneous-form-body">
+          <div class="student-form ent-student-form">
+            <div class="autocomplete-wrap" style="position:relative">
+              <input type="text" id="ent-autocomplete-search" placeholder="🔍 Rechercher un(e) candidat(e) inscrit(e)…" class="student-input autocomplete-input" oninput="handleEntAutocomplete(this.value)" autocomplete="off" />
+              <div id="ent-autocomplete-list" class="autocomplete-dropdown" style="display:none"></div>
+            </div>
+            <input type="text"  id="ent-nom"      placeholder="Nom *"                 class="student-input" />
+            <input type="text"  id="ent-prenom"   placeholder="Prénom *"              class="student-input" />
+            <input type="text"  id="ent-formation" placeholder="Formation / Domaine *" class="student-input" />
+            <input type="email" id="ent-email"    placeholder="Email (optionnel)"     class="student-input" />
+            <input type="tel"   id="ent-phone"    placeholder="Téléphone (optionnel)" class="student-input" />
+          </div>
+          <div class="ent-form-actions">
+            <button class="btn-add-student" onclick="addSpontaneous()">✅ Enregistrer</button>
+            <button class="btn-cancel-spontaneous" onclick="toggleSpontaneousForm()">Annuler</button>
+          </div>
+          <p id="ent-spontaneous-error" class="error-msg" style="display:none"></p>
+        </div>
+      </div>
+
+      <!-- Liste des candidats -->
+      <div class="ent-students-section">
+        <div class="students-list-header">
+          <h4>👥 Vos candidat(e)s</h4>
+          <span id="ent-student-count" class="count-badge">0</span>
+          <button id="ent-export-btn" class="btn-export-csv" onclick="exportEntCandidates()" style="display:none">📥 Exporter Excel</button>
+        </div>
+        <div id="ent-students-list" class="ent-students-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== VUE CRE ===== -->
+  <div id="screen-cre" class="screen">
+    <header class="app-header cre-header">
+      <button class="back-btn" onclick="goHome()">← Accueil</button>
+      <div class="header-logos">
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo" />
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo clem-logo" />
+      </div>
+      <h2 class="header-title">Espace CRE</h2>
+    </header>
+
+    <!-- CRE Login -->
+    <div id="cre-login" class="cre-login-wrap">
+      <div class="cre-login-box">
+        <div class="cre-login-icon">🔐</div>
+        <h3>Accès CRE</h3>
+        <p>Saisissez votre PIN pour accéder à la gestion des positionnements</p>
+        <div class="pin-input-wrap">
+          <input type="password" id="cre-pin-input" placeholder="PIN CRE" class="pin-input" onkeydown="if(event.key==='Enter') verifyCRE()" />
+          <button class="btn-pin-eye" type="button" onclick="togglePinVisibility('cre-pin-input', this)" title="Afficher / masquer">👁</button>
+        </div>
+        <button class="btn-primary" onclick="verifyCRE()">Connexion</button>
+        <p id="cre-login-error" class="error-msg" style="display:none">PIN incorrect. Réessayez.</p>
+      </div>
+    </div>
+
+    <!-- CRE Dashboard -->
+    <div id="cre-dashboard" style="display:none">
+      <!-- Vue tabs -->
+      <div class="cre-view-tabs">
+        <button class="cre-view-tab active" id="tab-positionnements" onclick="switchCREView('positionnements')">📋 Positionnements</button>
+        <button class="cre-view-tab" id="tab-presence" onclick="switchCREView('presence')">✅ Présence entreprises</button>
+        <button class="cre-view-tab" id="tab-candidats" onclick="switchCREView('candidats')">👥 Candidats</button>
+      </div>
+
+      <!-- Vue présence -->
+      <div id="cre-presence-view" style="display:none">
+        <!-- Zone sticky : titre + stats + filtres -->
+        <div class="presence-sticky-zone">
+          <div class="presence-header">
+            <div class="presence-title-row">
+              <h3>✅ Présence des entreprises sur l'événement</h3>
+              <button class="btn-export-csv" onclick="exportPresence()">📥 Exporter Excel</button>
+            </div>
+            <div class="presence-stats" id="presence-stats"></div>
+          </div>
+          <!-- Filtres présence -->
+          <div class="presence-filters">
+            <input type="text" id="presence-search" class="admin-filter-input" placeholder="🔍 Rechercher une entreprise…" oninput="renderPresenceTab()" />
+            <select id="presence-filiere" class="admin-filter-select" onchange="renderPresenceTab()">
+              <option value="all">Toutes les filières</option>
+              <option value="COMMERCE">Commerce</option>
+              <option value="COMMERCE NS">Commerce NS</option>
+              <option value="COMMERCE CLEM">Commerce Will</option>
+              <option value="IMMOBILIER">Immobilier</option>
+              <option value="BANQUE">Banque</option>
+              <option value="MARKETING">Marketing / Digital &amp; Social</option>
+              <option value="RH">RH</option>
+            </select>
+            <div class="admin-filter-btns">
+              <button class="admin-filter-btn active" id="pf-all"     onclick="setPresenceFilter('all',this)">Toutes</button>
+              <button class="admin-filter-btn"         id="pf-present" onclick="setPresenceFilter('present',this)">✅ Présentes</button>
+              <button class="admin-filter-btn"         id="pf-absent"  onclick="setPresenceFilter('absent',this)">❌ Absentes</button>
+            </div>
+          </div>
+        </div>
+        <div id="presence-table-wrap" class="presence-table-wrap"></div>
+      </div>
+
+      <!-- Vue candidats (Google Sheet) -->
+      <div id="cre-candidats-view" style="display:none">
+        <div class="candidats-header">
+          <div class="candidats-title-row">
+            <h3>👥 Candidats inscrits <span id="sheet-total-badge" class="count-badge">0</span></h3>
+            <div class="candidats-actions">
+              <span id="sheet-sync-info" class="sync-info-text"></span>
+              <button class="btn-sync-sheet" onclick="loadSheetCandidates(true)">🔄 Actualiser</button>
+              <button class="btn-export-csv" onclick="exportSheetCandidates()">📥 Exporter Excel</button>
+            </div>
+          </div>
+          <div id="sheet-stats-bar" class="sheet-stats-bar"></div>
+        </div>
+        <div class="candidats-filters">
+          <input type="text" id="sheet-search" class="admin-filter-input" style="flex:1;min-width:200px" placeholder="🔍 Rechercher par nom, prénom, email, domaine…" oninput="renderSheetCandidates()" />
+          <select id="sheet-situation-filter" class="admin-filter-select" onchange="renderSheetCandidates()">
+            <option value="all">Toutes situations</option>
+            <option value="CLEM">Étudiant CLEM</option>
+            <option value="autre">Autre école</option>
+            <option value="Reconver">Reconversion</option>
+          </select>
+          <div class="admin-filter-btns">
+            <button class="admin-filter-btn active" id="cf-all" onclick="setCheckinFilter('all',this)">Tous</button>
+            <button class="admin-filter-btn" id="cf-in"  onclick="setCheckinFilter('in',this)">✅ Présents</button>
+            <button class="admin-filter-btn" id="cf-out" onclick="setCheckinFilter('out',this)">⏳ Attendus</button>
+          </div>
+        </div>
+        <!-- Inscriptions sur place à valider -->
+        <div id="sr-pending-section" class="sr-pending-section" style="display:none">
+          <div class="sr-pending-header">
+            <span class="sr-pending-title">⏳ Inscriptions sur place — à valider</span>
+            <span id="sr-pending-count" class="count-badge sr-count-badge">0</span>
+            <button class="btn-export-csv" onclick="exportSelfRegs()" style="margin-left:auto;font-size:0.8rem">📥 Exporter</button>
+          </div>
+          <div id="sr-pending-list" class="sr-pending-list"></div>
+        </div>
+
+        <div id="sheet-candidates-table" class="sheet-candidates-table"></div>
+      </div>
+
+      <div id="cre-positionnements-view">
+        <div class="cre-controls">
+          <div class="cre-filter-bar">
+            <input type="text" id="cre-search" placeholder="🔍 Rechercher..." class="search-input" oninput="filterCRECompanies()" />
+            <button class="btn-add-company" onclick="openAddCompanyModal()">➕ Ajouter une entreprise</button>
+            <select id="cre-filiere-filter" class="filiere-select" onchange="filterCRECompanies()">
+              <option value="all">Toutes les filières</option>
+              <option value="COMMERCE NS">Commerce CLEM</option>
+              <option value="COMMERCE CLEM">Commerce Will</option>
+              <option value="IMMOBILIER">Immobilier</option>
+              <option value="BANQUE / ASSURANCE">Banque / Assurance</option>
+              <option value="MARKETING / COM / SOCIAL">Marketing / Digital &amp; Social</option>
+              <option value="RH / TOURISME">RH / Tourisme</option>
+            </select>
+          </div>
+          <div class="cre-stats" id="cre-stats-bar"></div>
+          <button class="btn-export-csv" onclick="exportCREPositionnements()" style="margin-top:0.4rem">📥 Exporter Excel</button>
+        </div>
+        <div id="cre-companies-grid" class="companies-grid cre-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CRE ===== -->
+  <div id="modal-cre" class="modal-overlay" onclick="closeModalCRE(event)">
+    <div class="modal-box cre-modal-box">
+      <button class="modal-close" onclick="closeCREModal()">✕</button>
+      <div class="modal-header cre-modal-header">
+        <div class="modal-logo-wrap">
+          <img id="cre-modal-logo" src="" alt="" class="modal-logo" onerror="this.style.display='none'; document.getElementById('cre-modal-logo-fallback').style.display='flex'" />
+          <div id="cre-modal-logo-fallback" class="modal-logo-fallback" style="display:none"></div>
+        </div>
+        <div class="modal-header-info">
+          <h2 id="cre-modal-company-name"></h2>
+          <span id="cre-modal-filiere-badge" class="filiere-badge"></span>
+          <span id="cre-modal-contact" class="modal-secteur"></span>
+        </div>
+      </div>
+
+      <!-- Stand management -->
+      <div class="stand-edit-block">
+        <h4>📍 Localisation du stand</h4>
+        <div class="stand-edit-row">
+          <div class="stand-edit-field">
+            <label>N° Salle</label>
+            <input type="text" id="cre-stand-salle" placeholder="Ex: 101" class="stand-input" />
+          </div>
+          <div class="stand-edit-field">
+            <label>Étage</label>
+            <select id="cre-stand-etage" class="stand-input">
+              <option value="">-- Choisir --</option>
+              <option value="RDC">RDC</option>
+              <option value="R+1">R+1</option>
+              <option value="R+2">R+2</option>
+              <option value="Rooftop">Rooftop</option>
+            </select>
+          </div>
+        </div>
+        <p id="stand-save-msg" class="save-msg" style="display:none">✓ Enregistré</p>
+      </div>
+
+      <!-- Ajouter étudiant -->
+      <div class="add-student-block">
+        <h4>➕ Positionner un(e) étudiant(e)</h4>
+        <div class="student-form">
+          <div class="autocomplete-wrap" style="position:relative">
+            <input type="text" id="cre-autocomplete-search" placeholder="🔍 Rechercher un candidat inscrit au salon…" class="student-input autocomplete-input" oninput="handleCREAutocomplete(this.value)" autocomplete="off" />
+            <div id="cre-autocomplete-list" class="autocomplete-dropdown" style="display:none"></div>
+          </div>
+          <input type="text" id="student-nom" placeholder="Nom *" class="student-input" />
+          <input type="text" id="student-prenom" placeholder="Prénom *" class="student-input" />
+          <input type="text" id="student-formation" placeholder="Formation / Filière *" class="student-input" />
+          <input type="text" id="student-cre" placeholder="Votre nom (CRE)" class="student-input" />
+          <button class="btn-add-student" onclick="addStudent()">Positionner</button>
+        </div>
+        <p id="add-student-error" class="error-msg" style="display:none"></p>
+      </div>
+
+      <!-- Liste étudiants -->
+      <div class="students-list-block">
+        <div class="students-list-header">
+          <h4>👥 Étudiants positionnés</h4>
+          <span id="student-count-badge" class="count-badge">0</span>
+          <button id="cre-export-btn" class="btn-export-csv" onclick="exportCRECandidates()" style="display:none">📥 Exporter Excel</button>
+        </div>
+        <div id="students-list" class="students-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL PIN CANDIDAT ===== -->
+  <div id="modal-student-pin" class="modal-overlay" onclick="if(event.target===this)closeStudentPin()" style="display:none;z-index:2000">
+    <div class="modal-box student-pin-box">
+      <button class="modal-close" onclick="closeStudentPin()">✕</button>
+      <div class="student-pin-icon">🎓</div>
+      <h3>Espace Candidat(e)</h3>
+      <p>Saisissez le code d'accès pour découvrir les entreprises</p>
+      <div class="pin-input-wrap">
+        <input type="password" id="student-pin-input" class="pin-input" placeholder="Code d'accès"
+               onkeydown="if(event.key==='Enter') verifyStudentPin()" />
+        <button class="btn-pin-eye" type="button" onclick="togglePinVisibility('student-pin-input', this)" title="Afficher / masquer">👁</button>
+      </div>
+      <button class="btn-primary btn-student-connect" onclick="verifyStudentPin()">Accéder</button>
+      <p id="student-pin-error" class="error-msg" style="display:none">Code incorrect. Réessayez.</p>
+    </div>
+  </div>
+
+  <!-- ===== MODAL AJOUT ENTREPRISE (CRE) ===== -->
+  <div id="modal-add-company" class="modal-overlay" onclick="closeAddCompanyModal(event)">
+    <div class="modal-box modal-add-company-box">
+      <button class="modal-close" onclick="closeAddCompanyModal()">✕</button>
+      <div class="modal-add-header">
+        <div class="modal-add-icon">🏢</div>
+        <h3>Ajouter une entreprise</h3>
+        <p>Inscription de dernière minute</p>
+      </div>
+      <div class="modal-add-form">
+        <div class="add-form-group">
+          <label>Nom de l'entreprise *</label>
+          <input type="text" id="add-company-nom" placeholder="Ex : Société ABC" class="student-input" />
+        </div>
+        <div class="add-form-group">
+          <label>Filière *</label>
+          <select id="add-company-filiere" class="filiere-select add-filiere-select">
+            <option value="">-- Choisir une filière --</option>
+            <option value="COMMERCE NS">Commerce CLEM</option>
+            <option value="COMMERCE CLEM">Commerce CLEM</option>
+            <option value="IMMOBILIER">Immobilier</option>
+            <option value="BANQUE / ASSURANCE">Banque / Assurance</option>
+            <option value="MARKETING / COM / SOCIAL">Marketing / Com / Digital et Social</option>
+            <option value="RH / TOURISME">RH / Tourisme</option>
+            <option value="AUTRE">Autre</option>
+          </select>
+        </div>
+        <div class="add-form-group">
+          <label>Contact (nom du recruteur)</label>
+          <input type="text" id="add-company-contact" placeholder="Ex : Marie Dupont" class="student-input" />
+        </div>
+        <div class="add-form-group">
+          <label>Secteur d'activité</label>
+          <input type="text" id="add-company-secteur" placeholder="Ex : Commerce alimentaire" class="student-input" />
+        </div>
+        <div class="add-form-group">
+          <label>Site web (optionnel)</label>
+          <input type="url" id="add-company-website" placeholder="https://..." class="student-input" />
+        </div>
+        <p id="add-company-error" class="error-msg" style="display:none"></p>
+        <button class="btn-add-student btn-add-company-confirm" onclick="addCompany()">✅ Ajouter l'entreprise</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ÉCRAN "JE M'INSCRIS" (accès libre) ===== -->
+  <div id="screen-selfregister" class="screen">
+    <header class="app-header sr-header">
+      <button class="back-btn" onclick="goHome()">← Accueil</button>
+      <div class="header-logos">
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo" />
+        <img src="/images/logo-clem.svg" alt="CLEM" class="header-logo clem-logo" />
+      </div>
+      <h2 class="header-title">✍️ Je m'inscris</h2>
+    </header>
+
+    <!-- Bandeau CTA unique -->
+    <div class="sr-cta-bar">
+      <div class="sr-cta-left">
+        <div class="sr-cta-icon">🎯</div>
+        <div class="sr-cta-text">
+          <strong>Vous souhaitez participer au Job Dating ?</strong>
+          <span>Inscrivez-vous — notre équipe CRE vous positionnera sur les entreprises qui correspondent à votre profil.</span>
+        </div>
+      </div>
+      <button class="btn-sr-cta" onclick="openSrForm()">✍️ Je m'inscris</button>
+    </div>
+
+    <!-- Titre liste consultative -->
+    <div class="sr-directory-header">
+      <h3 class="sr-directory-title">🏢 Entreprises participantes <span id="sr-count-all" class="count-badge" style="font-size:0.85rem;vertical-align:middle"></span></h3>
+      <input type="text" id="sr-search-input" placeholder="🔍 Rechercher..." class="search-input sr-search" oninput="srSearchCompanies()" />
+    </div>
+
+    <div id="sr-companies-grid" class="companies-grid sr-companies-grid"></div>
+  </div>
+
+  <!-- ===== MODALE DÉTAIL ENTREPRISE (Je m'inscris — infos de base) ===== -->
+  <div id="modal-sr-detail" class="modal-overlay" onclick="if(event.target===this)closeSrDetail()">
+    <div class="modal-box sr-detail-box">
+      <button class="modal-close" onclick="closeSrDetail()">✕</button>
+
+      <div class="modal-header">
+        <div class="modal-logo-wrap">
+          <img id="sr-detail-logo" src="" alt="" class="modal-logo"
+               onerror="this.style.display='none'; document.getElementById('sr-detail-logo-fallback').style.display='flex'" />
+          <div id="sr-detail-logo-fallback" class="modal-logo-fallback" style="display:none"></div>
+        </div>
+        <div class="modal-header-info">
+          <h2 id="sr-detail-name"></h2>
+          <span id="sr-detail-filiere" class="filiere-badge"></span>
+          <span id="sr-detail-tagline" class="modal-secteur"></span>
+        </div>
+      </div>
+
+      <div id="modal-stand" class="stand-block">
+        <div class="stand-icon">📍</div>
+        <div class="stand-info">
+          <div class="stand-label">Emplacement du stand</div>
+          <div id="sr-detail-stand" class="stand-location"></div>
+        </div>
+        <a id="sr-detail-website" href="#" target="_blank" class="website-btn">🌐 Site web</a>
+      </div>
+
+      <div class="sr-detail-info-note">
+        <span class="sr-detail-note-icon">ℹ️</span>
+        <span>Pour vous inscrire au Job Dating, utilisez le bouton <strong>« Je m'inscris »</strong> en haut de la liste des entreprises.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL FORMULAIRE INSCRIPTION (Je m'inscris) ===== -->
+  <div id="modal-sr-form" class="modal-overlay" onclick="if(event.target===this)closeSrForm()">
+    <div class="modal-box sr-form-box">
+      <button class="modal-close" onclick="closeSrForm()">✕</button>
+
+      <!-- Header entreprise sélectionnée -->
+      <div class="sr-form-company-header" id="sr-form-company-header" style="display:none">
+        <div class="sr-form-company-logo-wrap">
+          <img id="sr-form-logo" src="" alt="" class="sr-form-logo" onerror="this.style.display='none';document.getElementById('sr-form-logo-fallback').style.display='flex'" />
+          <div id="sr-form-logo-fallback" class="sr-form-logo-fallback" style="display:none"></div>
+        </div>
+        <div>
+          <div id="sr-form-company-name" class="sr-form-company-name"></div>
+          <div id="sr-form-company-filiere" class="sr-form-company-filiere"></div>
+        </div>
+      </div>
+
+      <div class="sr-form-title">
+        <div class="sr-form-title-icon">✍️</div>
+        <div>
+          <h3>M'inscrire au Job Dating</h3>
+          <p>Complétez vos informations. Notre équipe CRE validera votre inscription.</p>
+        </div>
+      </div>
+
+      <div class="sr-form-fields">
+        <div class="sr-form-row">
+          <input type="text" id="sr-nom" placeholder="Nom *" class="student-input sr-input" />
+          <input type="text" id="sr-prenom" placeholder="Prénom *" class="student-input sr-input" />
+        </div>
+        <div class="sr-form-row">
+          <input type="email" id="sr-email" placeholder="Email *" class="student-input sr-input" />
+          <input type="tel" id="sr-tel" placeholder="Téléphone" class="student-input sr-input" />
+        </div>
+        <input type="text" id="sr-diplome" placeholder="Votre dernier diplôme obtenu" class="student-input sr-input" />
+        <input type="text" id="sr-ecole" placeholder="École / Formation actuelle" class="student-input sr-input" />
+        <select id="sr-domaines" class="student-input sr-input filiere-select">
+          <option value="">-- Domaine qui vous attire --</option>
+          <option value="Commerce">Commerce</option>
+          <option value="Banque - Assurance">Banque - Assurance</option>
+          <option value="Immobilier">Immobilier</option>
+          <option value="Marketing - Communication">Marketing - Communication</option>
+          <option value="RH / Tourisme">RH / Tourisme</option>
+          <option value="Social">Social</option>
+          <option value="Gestion & Administratif">Gestion &amp; Administratif</option>
+        </select>
+      </div>
+
+      <p id="sr-form-error" class="error-msg" style="display:none"></p>
+
+      <div class="sr-form-actions">
+        <button class="btn-primary btn-sr-submit" onclick="submitSelfReg()">✅ Valider mon inscription</button>
+        <button class="btn-cancel-spontaneous" onclick="closeSrForm()">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL SUCCÈS INSCRIPTION ===== -->
+  <div id="modal-sr-success" class="modal-overlay" onclick="if(event.target===this)closeSrSuccess()">
+    <div class="modal-box sr-success-box">
+      <div class="sr-success-icon">🎉</div>
+      <h3 class="sr-success-title">Inscription enregistrée !</h3>
+      <p class="sr-success-msg">Votre inscription a bien été transmise à notre équipe CRE.</p>
+      <div class="sr-success-steps">
+        <div class="sr-step sr-step-call">
+          <span class="sr-step-num">📞</span>
+          <div class="sr-step-phones">
+            <span class="sr-step-call-label">Maintenant que tu es inscrit(e), appelle-nous rapidement pour finaliser ton inscription et te positionner sur les entreprises qui t'intéressent !</span>
+            <span class="sr-phone-line"><strong>CLEM :</strong> <a href="tel:0556494133" class="sr-phone-link">05 56 49 41 33</a></span>
+            <span class="sr-phone-line"><strong>CLEM :</strong> <a href="tel:0547307752" class="sr-phone-link">05 47 30 77 52</a></span>
+          </div>
+        </div>
+      </div>
+      <div class="sr-success-actions">
+        <button class="btn-cancel-spontaneous" onclick="closeSrSuccessGoHome()">← Retour à l'accueil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/js/app.js?v=20260327a"></script>
+</body>
+</html>
