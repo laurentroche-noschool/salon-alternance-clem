@@ -2473,13 +2473,19 @@
         setForm({ ...candidate });
       }, [candidate.id, candidate.updatedAt]);
 
+      // École par défaut si la fiche n'en a pas (ancien candidat, mono-école CLEM)
+      const fallbackEcole = Object.keys((config && config.ecoles) || {})[0] || '';
       // Auto-save on form change (debounced)
       const handleChange = (field, value) => {
         const updated = { ...form, [field]: value };
+        // Si on assigne une formation et que la fiche n'a pas d'école, on rattache à l'école par défaut
+        if (field === 'formation' && value && !updated.ecole && fallbackEcole) {
+          updated.ecole = fallbackEcole;
+        }
         // Auto-fill conseiller when ecole + formation change
         if (field === 'ecole' || field === 'formation') {
-          const ecole = field === 'ecole' ? value : form.ecole;
-          const formation = field === 'formation' ? value : form.formation;
+          const ecole = updated.ecole;
+          const formation = updated.formation;
           if (ecole && formation && config.ecoles[ecole]?.formations[formation]) {
             updated.conseillerFormation = config.ecoles[ecole].formations[formation].conseiller || '';
           }
@@ -2539,8 +2545,11 @@
         setSendingWa(false);
       };
 
-      const formations = form.ecole && config.ecoles[form.ecole]
-        ? Object.keys(config.ecoles[form.ecole].formations)
+      // Si la fiche n'a pas d'école renseignée, on retombe sur l'école par défaut
+      // pour quand même proposer les formations dans le dropdown
+      const ecoleForFormations = form.ecole || fallbackEcole;
+      const formations = ecoleForFormations && config.ecoles[ecoleForFormations]
+        ? Object.keys(config.ecoles[ecoleForFormations].formations)
         : [];
 
       const phoneClean = (form.telephone || '').replace(/\s/g, '').replace(/^0/, '+33');
