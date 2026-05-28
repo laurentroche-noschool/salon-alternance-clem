@@ -799,6 +799,9 @@
             <div className={`tab ${activeTab === 'doublons' ? 'active' : ''}`} onClick={() => setActiveTab('doublons')}>
               Doublons {duplicates.total > 0 && <span className="badge" style={{ background: '#F39C12' }}>{duplicates.total}</span>}
             </div>
+            <div className={`tab ${activeTab === 'dossiers' ? 'active' : ''}`} onClick={() => setActiveTab('dossiers')}>
+              Dossiers
+            </div>
             <div className={`tab ${activeTab === 'formations' ? 'active' : ''}`} onClick={() => setActiveTab('formations')}>
               Formations
             </div>
@@ -878,6 +881,10 @@
               onMerge={mergeDuplicates}
               onRefresh={loadStats}
             />
+          )}
+
+          {activeTab === 'dossiers' && (
+            <DossiersView candidates={candidates} config={config} />
           )}
 
           {activeTab === 'formations' && (
@@ -2225,6 +2232,182 @@
     }
 
     // ============ CANDIDATE DRAWER ============
+    // ============ DOSSIERS VIEW (onglet) ============
+    // Liste tous les candidats regroupés par formation, avec compteur de documents,
+    // et permet d'ouvrir le dossier admission complet dans un modal dédié.
+    function DossiersView({ candidates, config }) {
+      const [selectedFormation, setSelectedFormation] = useState('all');
+      const [search, setSearch] = useState('');
+      const [openCandidate, setOpenCandidate] = useState(null);
+      const [docsCounts, setDocsCounts] = useState({}); // { candidateId: { count, hasPhoto } }
+
+      // Compteur de docs par candidat - chargé en parallèle au mount
+      useEffect(() => {
+        let cancelled = false;
+        (async () => {
+          const token = getToken();
+          const counts = {};
+          await Promise.all(candidates.map(async (c) => {
+            try {
+              const r = await fetch('/parcoursup/api/candidates/' + c.id + '/documents', {
+                headers: { 'Authorization': 'Bearer ' + token }
+              });
+              if (!r.ok) return;
+              const d = await r.json();
+              const standardsCount = Object.keys(d.standards || {}).length;
+              counts[c.id] = {
+                count: standardsCount + (d.autres || []).length,
+                hasPhoto: !!(d.standards && d.standards.photo)
+              };
+            } catch (_) {}
+          }));
+          if (!cancelled) setDocsCounts(counts);
+        })();
+        return () => { cancelled = true; };
+      }, [candidates]);
+
+      const ecoleName = Object.keys(config.ecoles || {})[0];
+      const allFormations = ecoleName ? Object.keys(config.ecoles[ecoleName].formations || {}) : [];
+
+      // Compteurs par formation (avec "Sans formation" pour les candidats vierges)
+      const candidatesByFormation = useMemo(() => {
+        const map = { '__none__': [] };
+        allFormations.forEach(f => { map[f] = []; });
+        candidates.forEach(c => {
+          const f = c.formation || '__none__';
+          if (!map[f]) map[f] = [];
+          map[f].push(c);
+        });
+        return map;
+      }, [candidates, allFormations]);
+
+      const visibleCandidates = useMemo(() => {
+        let list = selectedFormation === 'all'
+          ? candidates
+          : (candidatesByFormation[selectedFormation] || []);
+        if (search.trim()) {
+          const s = search.toLowerCase();
+          list = list.filter(c =>
+            (c.nom || '').toLowerCase().includes(s) ||
+            (c.prenom || '').toLowerCase().includes(s) ||
+            (c.email || '').toLowerCase().includes(s)
+          );
+        }
+        return list;
+      }, [candidates, selectedFormation, search, candidatesByFormation]);
+
+      const stageLabel = (stageId) => (config.stages || []).find(s => s.id === stageId)?.label || stageId;
+      const stageColor = (stageId) => (config.stages || []).find(s => s.id === stageId)?.color || '#999';
+
+      return (
+        <div style={{ padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, fontFamily: 'Inter Tight, Inter, sans-serif', margin: 0 }}>
+              Dossiers candidats <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: 16 }}>({visibleCandidates.length})</span>
+            </h2>
+            <input type="search" placeholder="Rechercher un candidat..." value={search} onChange={e => setSearch(e.target.value)}
+              style={{ width: 280, padding: '8px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13 }} />
+          </div>
+
+          {/* Pills par formation */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+            <button onClick={() => setSelectedFormation('all')}
+              style={{ padding: '6px 14px', borderRadius: 20, border: selectedFormation === 'all' ? '2px solid #111' : '1.5px solid #e2e8f0',
+                background: selectedFormation === 'all' ? '#DDE04B' : 'white', color: '#111', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+              Toutes ({candidates.length})
+            </button>
+            {allFormations.map(f => (
+              <button key={f} onClick={() => setSelectedFormation(f)}
+                style={{ padding: '6px 14px', borderRadius: 20, border: selectedFormation === f ? '2px solid #111' : '1.5px solid #e2e8f0',
+                  background: selectedFormation === f ? '#DDE04B' : 'white', color: '#111', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                {f} ({(candidatesByFormation[f] || []).length})
+              </button>
+            ))}
+            {(candidatesByFormation['__none__'] || []).length > 0 && (
+              <button onClick={() => setSelectedFormation('__none__')}
+                style={{ padding: '6px 14px', borderRadius: 20, border: selectedFormation === '__none__' ? '2px solid #111' : '1.5px solid #e2e8f0',
+                  background: selectedFormation === '__none__' ? '#DDE04B' : '#fef3c7', color: '#92400e', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                ⚠️ Sans formation ({(candidatesByFormation['__none__'] || []).length})
+              </button>
+            )}
+          </div>
+
+          {visibleCandidates.length === 0 ? (
+            <div style={{ background: 'white', padding: 60, borderRadius: 12, textAlign: 'center', color: '#94a3b8' }}>
+              <Icon name="users" size={40} color="#cbd5e1" />
+              <p style={{ marginTop: 16, fontSize: 14 }}>Aucun candidat dans cette formation.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+              {visibleCandidates.map(c => {
+                const meta = docsCounts[c.id] || { count: 0, hasPhoto: false };
+                const stage = stageLabel(c.stage);
+                const sColor = stageColor(c.stage);
+                return (
+                  <div key={c.id}
+                    onClick={() => setOpenCandidate(c)}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
+                    style={{ background: 'white', borderRadius: 12, padding: 14, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#94a3b8', fontWeight: 800, fontSize: 14 }}>
+                        {meta.hasPhoto ? '📷' : ((c.prenom || '?')[0] + (c.nom || '?')[0]).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.prenom} {c.nom}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.formation || <em style={{ color: '#dc2626' }}>(sans formation)</em>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'white', background: sColor, padding: '2px 8px', borderRadius: 10 }}>{stage}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: meta.count > 0 ? '#0f172a' : '#94a3b8', background: meta.count > 0 ? '#DDE04B' : '#f1f5f9', padding: '2px 8px', borderRadius: 10 }}>
+                        📎 {meta.count}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {openCandidate && (
+            <CandidateDossierModal candidate={openCandidate} onClose={() => setOpenCandidate(null)} />
+          )}
+        </div>
+      );
+    }
+
+    // ============ CANDIDATE DOSSIER MODAL ============
+    // Modal qui réutilise le composant CandidateDocuments avec en-tête identité
+    function CandidateDossierModal({ candidate, onClose }) {
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ width: 780, maxHeight: '92vh' }}>
+            <div className="modal-header">
+              <div style={{ flex: 1 }}>
+                <h2 style={{ fontFamily: 'Inter Tight, Inter, sans-serif', margin: 0 }}>
+                  Dossier admission — {candidate.prenom} {candidate.nom}
+                </h2>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                  {candidate.formation ? <strong>{candidate.formation}</strong> : <em>Sans formation</em>}
+                  {candidate.email && <> · {candidate.email}</>}
+                  {candidate.telephone && <> · {candidate.telephone}</>}
+                </div>
+              </div>
+              <button className="btn btn-icon btn-outline" onClick={onClose}><Icon name="x" size={18} /></button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '76vh', overflowY: 'auto' }}>
+              <CandidateDocuments candidateId={candidate.id} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // ============ CANDIDATE DOCUMENTS (dossier d'admission) ============
     // Composant intégré au CandidateDrawer : photo + 9 docs standards + autres docs libres.
     function CandidateDocuments({ candidateId }) {
@@ -2326,27 +2509,30 @@
         const doc = docs.standards[slot.type];
         const busy = uploading === slot.type;
         return (
-          <div key={slot.type} style={{ background: doc ? '#fafce0' : '#f8fafc', border: doc ? '1px solid #DDE04B' : '1px solid #e2e8f0', borderRadius: 10, padding: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginBottom: 6, lineHeight: 1.2 }}>{slot.label}</div>
+          <div key={slot.type} style={{ background: doc ? '#fafce0' : '#f8fafc', border: doc ? '1.5px solid #DDE04B' : '1px solid #e2e8f0', borderRadius: 10, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>{slot.label}</div>
+              {doc && <span style={{ fontSize: 14 }} title="Document présent">✓</span>}
+            </div>
             {doc ? (
               <>
-                <div style={{ fontSize: 10, color: '#475569', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={doc.originalName}>{doc.originalName}{doc.size ? ' · ' + fmtSize(doc.size) : ''}</div>
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button className="btn btn-sm" style={{ background: '#DDE04B', color: '#111', border: '1.5px solid #111', flex: 1, fontWeight: 700, fontSize: 11, padding: '4px 8px' }} onClick={() => download(slot.type, null, doc.originalName)}>
-                    <Icon name="download" size={11} /> DL
+                <div style={{ fontSize: 10, color: '#475569', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={doc.originalName}>📎 {doc.originalName}{doc.size ? ' · ' + fmtSize(doc.size) : ''}</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button className="btn btn-sm" style={{ background: '#DDE04B', color: '#111', border: '1.5px solid #111', fontWeight: 700, fontSize: 11, padding: '6px 10px', flex: '1 1 auto' }} onClick={() => download(slot.type, null, doc.originalName)} title="Télécharger le document">
+                    <Icon name="download" size={12} /> Télécharger
                   </button>
-                  <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 8px' }} title="Remplacer">
-                    <Icon name="upload" size={11} />
+                  <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, background: '#0ea5e9', color: 'white', border: 'none', fontSize: 11, padding: '6px 10px', fontWeight: 700, flex: '1 1 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }} title="Remplacer par un nouveau fichier">
+                    <Icon name="upload" size={12} /> {busy ? '...' : 'Remplacer'}
                     <input type="file" accept={slot.accept} style={{ display: 'none' }} onChange={e => upload(slot.type, e.target.files[0])} disabled={busy} />
                   </label>
-                  <button className="btn btn-sm" style={{ background: '#fee2e2', color: '#991b1b', border: 'none', fontSize: 11, padding: '4px 8px' }} onClick={() => removeDoc(slot.type)} title="Supprimer">
-                    <Icon name="trash" size={11} />
+                  <button className="btn btn-sm" style={{ background: '#dc2626', color: 'white', border: 'none', fontSize: 11, padding: '6px 10px', fontWeight: 700, flex: '1 1 auto' }} onClick={() => removeDoc(slot.type)} title="Supprimer définitivement">
+                    <Icon name="trash" size={12} /> Supprimer
                   </button>
                 </div>
               </>
             ) : (
-              <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer', width: '100%', justifyContent: 'center', fontSize: 11, padding: '6px 8px' }}>
-                {busy ? '⏳ Upload...' : <><Icon name="upload" size={11} /> Ajouter</>}
+              <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer', width: '100%', justifyContent: 'center', fontSize: 12, padding: '8px 10px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {busy ? '⏳ Upload...' : <><Icon name="upload" size={12} /> Ajouter un fichier</>}
                 <input type="file" accept={slot.accept} style={{ display: 'none' }} onChange={e => upload(slot.type, e.target.files[0])} disabled={busy} />
               </label>
             )}
@@ -2383,16 +2569,16 @@
               )}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{photoSlot.label}</div>
-              <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 6 }}>{photoSlot.help}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{photoSlot.label}{photoUrl && <span style={{ marginLeft: 6 }} title="Photo présente">✓</span>}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{photoSlot.help}</div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '4px 10px' }}>
-                  {uploading === 'photo' ? '⏳' : <><Icon name="upload" size={11} /> {photoUrl ? 'Remplacer' : 'Ajouter'}</>}
+                <label className="btn btn-sm" style={{ cursor: 'pointer', margin: 0, fontSize: 11, padding: '6px 12px', fontWeight: 700, background: photoUrl ? '#0ea5e9' : '#DDE04B', color: photoUrl ? 'white' : '#111', border: photoUrl ? 'none' : '1.5px solid #111', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {uploading === 'photo' ? '⏳' : <><Icon name="upload" size={12} /> {photoUrl ? 'Remplacer' : 'Ajouter une photo'}</>}
                   <input type="file" accept={photoSlot.accept} style={{ display: 'none' }} onChange={e => upload('photo', e.target.files[0])} disabled={uploading === 'photo'} />
                 </label>
                 {photoUrl && (
-                  <button className="btn btn-sm" style={{ background: '#fee2e2', color: '#991b1b', border: 'none', fontSize: 11, padding: '4px 8px' }} onClick={() => removeDoc('photo')}>
-                    <Icon name="trash" size={11} />
+                  <button className="btn btn-sm" style={{ background: '#dc2626', color: 'white', border: 'none', fontSize: 11, padding: '6px 12px', fontWeight: 700 }} onClick={() => removeDoc('photo')}>
+                    <Icon name="trash" size={12} /> Supprimer
                   </button>
                 )}
               </div>
@@ -2416,11 +2602,11 @@
                       <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.label}</div>
                       <div style={{ fontSize: 10, color: '#94a3b8' }}>{doc.originalName} · {fmtSize(doc.size)}</div>
                     </div>
-                    <button className="btn btn-sm" style={{ background: '#DDE04B', color: '#111', border: '1.5px solid #111', fontWeight: 700, fontSize: 11, padding: '3px 8px' }} onClick={() => download('autre', doc.id, doc.originalName)}>
-                      <Icon name="download" size={11} />
+                    <button className="btn btn-sm" style={{ background: '#DDE04B', color: '#111', border: '1.5px solid #111', fontWeight: 700, fontSize: 11, padding: '5px 10px' }} onClick={() => download('autre', doc.id, doc.originalName)} title="Télécharger">
+                      <Icon name="download" size={12} /> Télécharger
                     </button>
-                    <button className="btn btn-sm" style={{ background: '#fee2e2', color: '#991b1b', border: 'none', fontSize: 11, padding: '3px 8px' }} onClick={() => removeDoc('autre', doc.id)}>
-                      <Icon name="trash" size={11} />
+                    <button className="btn btn-sm" style={{ background: '#dc2626', color: 'white', border: 'none', fontSize: 11, padding: '5px 10px', fontWeight: 700 }} onClick={() => removeDoc('autre', doc.id)} title="Supprimer">
+                      <Icon name="trash" size={12} /> Supprimer
                     </button>
                   </div>
                 ))}
@@ -2448,6 +2634,7 @@
       const [relanceForm, setRelanceForm] = useState({ type: 'telephone', notes: '', result: 'autre', createdBy: '' });
       const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
       const [showCourrier, setShowCourrier] = useState(false);
+      const [showDossier, setShowDossier] = useState(false);
       const saveTimeoutRef = useRef(null);
 
       // === Message WhatsApp editable par etape ===
@@ -2661,7 +2848,16 @@
               </div>
 
               <div className="drawer-section">
-                <CandidateDocuments candidateId={candidate.id} />
+                <button
+                  className="btn"
+                  style={{ width: '100%', background: '#DDE04B', color: '#111', border: '2px solid #111', fontWeight: 700, padding: '10px 16px', fontSize: 13, fontFamily: 'Inter Tight, Inter, sans-serif' }}
+                  onClick={() => setShowDossier(true)}
+                >
+                  <Icon name="file" size={14} /> Voir le dossier admission
+                </button>
+                {showDossier && (
+                  <CandidateDossierModal candidate={candidate} onClose={() => setShowDossier(false)} />
+                )}
               </div>
 
               <div className="drawer-section">
