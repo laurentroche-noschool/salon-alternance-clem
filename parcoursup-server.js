@@ -854,6 +854,194 @@ app.get('/parcoursup/api/formations/:name/download/:type/:id?', (req, res) => {
   res.download(filepath, downloadName);
 });
 
+// ============ CANDIDATE DOCUMENTS (dossier d'admission) ============
+// Stockage : data/candidats/<candidateId>/<type>.<ext>
+// + data/candidats/<candidateId>/autres/<docId>.<ext> pour les docs libres
+// Métadonnées dans le candidat : c.documents = { photo: {...}, identite_recto: {...}, ..., autres: [{...}] }
+
+const CANDIDATES_DIR = path.join(__dirname, 'data', 'candidats');
+
+// Types standards autorisés (les autres sont rejetés)
+const CANDIDATE_DOC_TYPES = {
+  photo:                { accept: ['image/jpeg', 'image/png', 'image/jpg'],   maxMB: 5,  exts: ['.jpg', '.jpeg', '.png'] },
+  identite_recto:       { accept: ['application/pdf', 'image/jpeg', 'image/png'], maxMB: 10, exts: ['.pdf', '.jpg', '.jpeg', '.png'] },
+  identite_verso:       { accept: ['application/pdf', 'image/jpeg', 'image/png'], maxMB: 10, exts: ['.pdf', '.jpg', '.jpeg', '.png'] },
+  releve_notes_n:       { accept: ['application/pdf'], maxMB: 20, exts: ['.pdf'] },
+  releve_notes_n_minus_1: { accept: ['application/pdf'], maxMB: 20, exts: ['.pdf'] },
+  dernier_diplome:      { accept: ['application/pdf'], maxMB: 20, exts: ['.pdf'] },
+  synthese_pro:         { accept: ['application/pdf'], maxMB: 20, exts: ['.pdf'] },
+  test_entree:          { accept: ['application/pdf'], maxMB: 20, exts: ['.pdf'] },
+  carte_sejour:         { accept: ['application/pdf', 'image/jpeg', 'image/png'], maxMB: 10, exts: ['.pdf', '.jpg', '.jpeg', '.png'] },
+  cv:                   { accept: ['application/pdf'], maxMB: 20, exts: ['.pdf'] },
+};
+const STANDARD_DOC_TYPES = Object.keys(CANDIDATE_DOC_TYPES);
+const AUTRES_DOC_ACCEPT = ['application/pdf', 'image/jpeg', 'image/png'];
+
+// Multer dynamique : la validation type/taille se fait dans le handler
+const uploadDoc = multer ? multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 } // hard cap 20 Mo, validation fine dans handler
+}) : null;
+
+function extFromFilename(name) {
+  const m = String(name || '').toLowerCase().match(/\.[a-z0-9]+$/);
+  return m ? m[0] : '';
+}
+
+function findCandidate(id) {
+  const candidates = loadJSON('parcoursup-candidates.json') || [];
+  const idx = candidates.findIndex(c => c.id === id);
+  return { candidates, idx, candidate: idx >= 0 ? candidates[idx] : null };
+}
+
+// GET — liste les métadonnées des documents d'un candidat
+app.get('/parcoursup/api/candidates/:id/documents', (req, res) => {
+  const { candidate } = findCandidate(req.params.id);
+  if (!candidate) return res.status(404).json({ error: 'Candidat non trouvé' });
+  const docs = candidate.documents || {};
+  res.json({
+    standards: STANDARD_DOC_TYPES.reduce((acc, t) => { if (docs[t]) acc[t] = docs[t]; return acc; }, {}),
+    autres: docs.autres || []
+  });
+});
+
+// POST upload — type = un des STANDARD_DOC_TYPES OU 'autre'
+app.post('/parcoursup/api/candidates/:id/documents/upload/:type', (req, res, next) => {
+  if (!uploadDoc) return res.status(500).json({ error: 'multer non disponible' });
+  uploadDoc.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'Upload échoué' });
+    next();
+  });
+}, (req, res) => {
+  const { candidates, idx, candidate } = findCandidate(req.params.id);
+  if (!candidate) return res.status(404).json({ error: 'Candidat non trouvé' });
+  if (!req.file) return res.status(400).json({ error: 'Aucun fichier fourni' });
+
+  const type = req.params.type;
+  const dir = path.join(CANDIDATES_DIR, candidate.id);
+  fs.mkdirSync(dir, { recursive: true });
+
+  // Détermine accept rules + extension
+  let accept, maxMB, ext, filename, isStandard;
+  if (STANDARD_DOC_TYPES.includes(type)) {
+    isStandard = true;
+    const rules = CANDIDATE_DOC_TYPES[type];
+    accept = rules.accept;
+    maxMB = rules.maxMB;
+    ext = extFromFilename(req.file.originalname);
+    if (!rules.exts.includes(ext)) ext = '.pdf'; // fallback safe
+    filename = type + ext;
+  } else if (type === 'autre') {
+    isStandard = false;
+    accept = AUTRES_DOC_ACCEPT;
+    maxMB = 20;
+    ext = extFromFilename(req.file.originalname) || '.pdf';
+  } else {
+    return res.status(400).json({ error: 'Type de document invalide' });
+  }
+
+  if (!accept.includes(req.file.mimetype)) {
+    return res.status(400).json({ error: `Format non accepté pour ${type} (reçu: ${req.file.mimetype})` });
+  }
+  if (req.file.size > maxMB * 1024 * 1024) {
+    return res.status(400).json({ error: `Fichier trop volumineux (max ${maxMB} Mo)` });
+  }
+
+  candidate.documents = candidate.documents || {};
+
+  if (isStandard) {
+    // Supprime l'ancien fichier (si remplacement et extension différente)
+    if (candidate.documents[type] && candidate.documents[type].filename && candidate.documents[type].filename !== filename) {
+      try { fs.unlinkSync(path.join(dir, candidate.documents[type].filename)); } catch (e) {}
+    }
+    fs.writeFileSync(path.join(dir, filename), req.file.buffer);
+    candidate.documents[type] = {
+      filename, originalName: req.file.originalname, mimetype: req.file.mimetype,
+      size: req.file.size, uploadedAt: new Date().toISOString()
+    };
+  } else {
+    // Autre doc : exige un label
+    const label = (req.body && req.body.label) || req.file.originalname.replace(/\.[^.]+$/, '');
+    const docId = genId();
+    const fname = `autre-${docId}${ext}`;
+    const otherDir = path.join(dir, 'autres');
+    fs.mkdirSync(otherDir, { recursive: true });
+    fs.writeFileSync(path.join(otherDir, fname), req.file.buffer);
+    candidate.documents.autres = candidate.documents.autres || [];
+    candidate.documents.autres.push({
+      id: docId, label, filename: fname,
+      originalName: req.file.originalname, mimetype: req.file.mimetype,
+      size: req.file.size, uploadedAt: new Date().toISOString()
+    });
+  }
+
+  candidate.updatedAt = new Date().toISOString();
+  candidates[idx] = candidate;
+  saveJSON('parcoursup-candidates.json', candidates);
+  res.json({ success: true, documents: candidate.documents });
+});
+
+// DELETE — supprime un document standard ou un autre
+app.delete('/parcoursup/api/candidates/:id/documents/:type/:docId?', (req, res) => {
+  const { candidates, idx, candidate } = findCandidate(req.params.id);
+  if (!candidate) return res.status(404).json({ error: 'Candidat non trouvé' });
+  const type = req.params.type;
+  const docId = req.params.docId;
+  const dir = path.join(CANDIDATES_DIR, candidate.id);
+  candidate.documents = candidate.documents || {};
+
+  if (STANDARD_DOC_TYPES.includes(type)) {
+    const doc = candidate.documents[type];
+    if (!doc) return res.status(404).json({ error: 'Document non trouvé' });
+    try { fs.unlinkSync(path.join(dir, doc.filename)); } catch (e) {}
+    delete candidate.documents[type];
+  } else if (type === 'autre') {
+    if (!docId) return res.status(400).json({ error: 'ID document requis' });
+    candidate.documents.autres = candidate.documents.autres || [];
+    const i = candidate.documents.autres.findIndex(d => d.id === docId);
+    if (i < 0) return res.status(404).json({ error: 'Document non trouvé' });
+    try { fs.unlinkSync(path.join(dir, 'autres', candidate.documents.autres[i].filename)); } catch (e) {}
+    candidate.documents.autres.splice(i, 1);
+  } else {
+    return res.status(400).json({ error: 'Type invalide' });
+  }
+  candidate.updatedAt = new Date().toISOString();
+  candidates[idx] = candidate;
+  saveJSON('parcoursup-candidates.json', candidates);
+  res.json({ success: true });
+});
+
+// GET download — téléchargement (frontend fetch + blob pour respecter l'auth)
+app.get('/parcoursup/api/candidates/:id/documents/download/:type/:docId?', (req, res) => {
+  const { candidate } = findCandidate(req.params.id);
+  if (!candidate) return res.status(404).send('Candidat non trouvé');
+  const type = req.params.type;
+  const docId = req.params.docId;
+  const dir = path.join(CANDIDATES_DIR, candidate.id);
+  const docs = candidate.documents || {};
+  let filepath, downloadName, mimetype;
+
+  if (STANDARD_DOC_TYPES.includes(type)) {
+    const doc = docs[type];
+    if (!doc) return res.status(404).send('Document non trouvé');
+    filepath = path.join(dir, doc.filename);
+    downloadName = doc.originalName || doc.filename;
+    mimetype = doc.mimetype;
+  } else if (type === 'autre') {
+    if (!docId) return res.status(400).send('ID requis');
+    const doc = (docs.autres || []).find(d => d.id === docId);
+    if (!doc) return res.status(404).send('Document non trouvé');
+    filepath = path.join(dir, 'autres', doc.filename);
+    downloadName = doc.originalName || doc.filename;
+    mimetype = doc.mimetype;
+  } else {
+    return res.status(400).send('Type invalide');
+  }
+  if (!fs.existsSync(filepath)) return res.status(404).send('Fichier physique manquant');
+  if (mimetype) res.setHeader('Content-Type', mimetype);
+  res.download(filepath, downloadName);
+});
+
 // ============ CANDIDATES ============
 app.get('/parcoursup/api/candidates', (req, res) => {
   let candidates = loadJSON('parcoursup-candidates.json');

@@ -8,4 +8,5 @@ Thumbs.db
 data/.wwebjs_auth/
 data/parcoursup-config.json
 data/formations/
+data/candidats/
 .claude/settings.local.json
