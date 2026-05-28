@@ -2,6 +2,8 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
+let multer;
+try { multer = require('multer'); } catch(e) { console.log('[Formations] multer non installé, uploads désactivés'); }
 let WAClient, WALocalAuth;
 let waLoadError = null; // diagnostic: error from require('whatsapp-web.js')
 let waInitError = null; // diagnostic: error from WhatsApp client init/launch
@@ -612,6 +614,244 @@ app.get('/parcoursup/api/config', (req, res) => {
 app.post('/parcoursup/api/config', (req, res) => {
   saveJSON('parcoursup-config.json', req.body);
   res.json({ success: true });
+});
+
+// ============ FORMATIONS (CLEM) ============
+// Stockage des PJ : data/formations/<slug>/{programme|calendrier|ficheProduit}.pdf
+// et data/formations/<slug>/autres/<id>.pdf pour les docs libres.
+// Métadonnées dans config.ecoles[ecole].formations[name].{attachments, autresDocs, libelle, niveau, rncp, franceCompetencesUrl}
+const FORMATIONS_DIR = path.join(__dirname, 'data', 'formations');
+
+function formationSlug(name) {
+  return String(name || '').toLowerCase().trim()
+    .replace(/[àâä]/g, 'a').replace(/[éèêë]/g, 'e').replace(/[ïî]/g, 'i')
+    .replace(/[ôö]/g, 'o').replace(/[ùûü]/g, 'u').replace(/ç/g, 'c')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function getFirstEcoleName(cfg) {
+  return Object.keys((cfg && cfg.ecoles) || {})[0];
+}
+
+const STANDARD_PJ_TYPES = ['programme', 'calendrier', 'ficheProduit'];
+
+// Multer en mémoire pour qu'on écrive nous-mêmes le fichier avec le bon nom
+const upload = multer ? multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 Mo
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf' ||
+        (file.originalname && file.originalname.toLowerCase().endsWith('.pdf'))) {
+      return cb(null, true);
+    }
+    cb(new Error('Seuls les PDF sont acceptés'));
+  }
+}) : null;
+
+// Liste toutes les formations avec leurs métadonnées
+app.get('/parcoursup/api/formations', (req, res) => {
+  const cfg = loadJSON('parcoursup-config.json');
+  const ecoleName = getFirstEcoleName(cfg);
+  if (!ecoleName) return res.json({ formations: [] });
+  const formations = cfg.ecoles[ecoleName].formations || {};
+  const list = Object.entries(formations).map(([name, data]) => ({
+    name,
+    libelle: data.libelle || '',
+    niveau: data.niveau || '',
+    rncp: data.rncp || '',
+    franceCompetencesUrl: data.franceCompetencesUrl || '',
+    conseiller: data.conseiller || '',
+    attachments: data.attachments || {},
+    autresDocs: data.autresDocs || []
+  }));
+  res.json({ formations: list, ecole: ecoleName });
+});
+
+// Créer une nouvelle formation
+app.post('/parcoursup/api/formations', (req, res) => {
+  const { name, libelle, niveau, rncp, franceCompetencesUrl, conseiller } = req.body || {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: 'Le nom de la formation est requis' });
+  const trimmedName = String(name).trim();
+  const cfg = loadJSON('parcoursup-config.json');
+  const ecoleName = getFirstEcoleName(cfg);
+  if (!ecoleName) return res.status(500).json({ error: 'Aucune école configurée' });
+  if (!cfg.ecoles[ecoleName].formations) cfg.ecoles[ecoleName].formations = {};
+  if (cfg.ecoles[ecoleName].formations[trimmedName]) {
+    return res.status(409).json({ error: 'Une formation portant ce nom existe déjà' });
+  }
+  cfg.ecoles[ecoleName].formations[trimmedName] = {
+    libelle: libelle || '', niveau: niveau || '', rncp: rncp || '',
+    franceCompetencesUrl: franceCompetencesUrl || '',
+    conseiller: conseiller || null,
+    attachments: {}, autresDocs: []
+  };
+  saveJSON('parcoursup-config.json', cfg);
+  res.json({ success: true, name: trimmedName });
+});
+
+// Modifier une formation existante
+app.put('/parcoursup/api/formations/:name', (req, res) => {
+  const cfg = loadJSON('parcoursup-config.json');
+  const ecoleName = getFirstEcoleName(cfg);
+  const oldName = req.params.name;
+  if (!cfg.ecoles[ecoleName] || !cfg.ecoles[ecoleName].formations[oldName]) {
+    return res.status(404).json({ error: 'Formation non trouvée' });
+  }
+  const formation = cfg.ecoles[ecoleName].formations[oldName];
+  const { name: newNameRaw, libelle, niveau, rncp, franceCompetencesUrl, conseiller } = req.body || {};
+  const newName = newNameRaw ? String(newNameRaw).trim() : oldName;
+
+  // Renommage : déplace le dossier PJ aussi
+  if (newName !== oldName) {
+    if (cfg.ecoles[ecoleName].formations[newName]) {
+      return res.status(409).json({ error: 'Une formation porte déjà ce nom' });
+    }
+    const oldDir = path.join(FORMATIONS_DIR, formationSlug(oldName));
+    const newDir = path.join(FORMATIONS_DIR, formationSlug(newName));
+    if (fs.existsSync(oldDir)) {
+      try { fs.renameSync(oldDir, newDir); } catch (e) { console.error('[Formations] Rename dir failed:', e); }
+    }
+    delete cfg.ecoles[ecoleName].formations[oldName];
+    cfg.ecoles[ecoleName].formations[newName] = formation;
+  }
+
+  const target = cfg.ecoles[ecoleName].formations[newName];
+  if (libelle !== undefined) target.libelle = libelle;
+  if (niveau !== undefined) target.niveau = niveau;
+  if (rncp !== undefined) target.rncp = rncp;
+  if (franceCompetencesUrl !== undefined) target.franceCompetencesUrl = franceCompetencesUrl;
+  if (conseiller !== undefined) target.conseiller = conseiller;
+  saveJSON('parcoursup-config.json', cfg);
+  res.json({ success: true, name: newName });
+});
+
+// Supprimer une formation (et ses PJ)
+app.delete('/parcoursup/api/formations/:name', (req, res) => {
+  const cfg = loadJSON('parcoursup-config.json');
+  const ecoleName = getFirstEcoleName(cfg);
+  const name = req.params.name;
+  if (!cfg.ecoles[ecoleName] || !cfg.ecoles[ecoleName].formations[name]) {
+    return res.status(404).json({ error: 'Formation non trouvée' });
+  }
+  delete cfg.ecoles[ecoleName].formations[name];
+  saveJSON('parcoursup-config.json', cfg);
+  const dir = path.join(FORMATIONS_DIR, formationSlug(name));
+  try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+  res.json({ success: true });
+});
+
+// Upload PJ — type = programme | calendrier | ficheProduit | autre
+app.post('/parcoursup/api/formations/:name/upload/:type', (req, res, next) => {
+  if (!upload) return res.status(500).json({ error: 'multer non disponible (npm install requis)' });
+  upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'Upload échoué' });
+    next();
+  });
+}, (req, res) => {
+  const cfg = loadJSON('parcoursup-config.json');
+  const ecoleName = getFirstEcoleName(cfg);
+  const name = req.params.name;
+  const type = req.params.type;
+  const formation = cfg.ecoles[ecoleName] && cfg.ecoles[ecoleName].formations[name];
+  if (!formation) return res.status(404).json({ error: 'Formation non trouvée' });
+  if (!req.file) return res.status(400).json({ error: 'Aucun fichier fourni' });
+
+  const slug = formationSlug(name);
+  const dir = path.join(FORMATIONS_DIR, slug);
+  fs.mkdirSync(dir, { recursive: true });
+
+  if (STANDARD_PJ_TYPES.includes(type)) {
+    const filename = `${type}.pdf`;
+    fs.writeFileSync(path.join(dir, filename), req.file.buffer);
+    formation.attachments = formation.attachments || {};
+    formation.attachments[type] = {
+      filename,
+      originalName: req.file.originalname,
+      uploadedAt: new Date().toISOString(),
+      size: req.file.size
+    };
+  } else if (type === 'autre') {
+    const label = (req.body && req.body.label) || req.file.originalname.replace(/\.pdf$/i, '');
+    const id = genId();
+    const filename = `autre-${id}.pdf`;
+    const otherDir = path.join(dir, 'autres');
+    fs.mkdirSync(otherDir, { recursive: true });
+    fs.writeFileSync(path.join(otherDir, filename), req.file.buffer);
+    formation.autresDocs = formation.autresDocs || [];
+    formation.autresDocs.push({
+      id, label, filename,
+      originalName: req.file.originalname,
+      uploadedAt: new Date().toISOString(),
+      size: req.file.size
+    });
+  } else {
+    return res.status(400).json({ error: 'Type invalide (programme | calendrier | ficheProduit | autre)' });
+  }
+  saveJSON('parcoursup-config.json', cfg);
+  res.json({ success: true, attachments: formation.attachments, autresDocs: formation.autresDocs });
+});
+
+// Supprimer une PJ
+app.delete('/parcoursup/api/formations/:name/attachment/:type/:id?', (req, res) => {
+  const cfg = loadJSON('parcoursup-config.json');
+  const ecoleName = getFirstEcoleName(cfg);
+  const name = req.params.name;
+  const type = req.params.type;
+  const id = req.params.id;
+  const formation = cfg.ecoles[ecoleName] && cfg.ecoles[ecoleName].formations[name];
+  if (!formation) return res.status(404).json({ error: 'Formation non trouvée' });
+  const slug = formationSlug(name);
+  const dir = path.join(FORMATIONS_DIR, slug);
+
+  if (STANDARD_PJ_TYPES.includes(type)) {
+    if (formation.attachments && formation.attachments[type]) {
+      try { fs.unlinkSync(path.join(dir, formation.attachments[type].filename)); } catch (e) {}
+      delete formation.attachments[type];
+    }
+  } else if (type === 'autre') {
+    if (!id) return res.status(400).json({ error: 'ID du document requis' });
+    formation.autresDocs = formation.autresDocs || [];
+    const idx = formation.autresDocs.findIndex(d => d.id === id);
+    if (idx >= 0) {
+      try { fs.unlinkSync(path.join(dir, 'autres', formation.autresDocs[idx].filename)); } catch (e) {}
+      formation.autresDocs.splice(idx, 1);
+    }
+  } else {
+    return res.status(400).json({ error: 'Type invalide' });
+  }
+  saveJSON('parcoursup-config.json', cfg);
+  res.json({ success: true });
+});
+
+// Télécharger une PJ — le frontend l'appelle avec Authorization header puis force le download via blob
+app.get('/parcoursup/api/formations/:name/download/:type/:id?', (req, res) => {
+  const cfg = loadJSON('parcoursup-config.json');
+  const ecoleName = getFirstEcoleName(cfg);
+  const name = req.params.name;
+  const type = req.params.type;
+  const id = req.params.id;
+  const formation = cfg.ecoles[ecoleName] && cfg.ecoles[ecoleName].formations[name];
+  if (!formation) return res.status(404).send('Formation non trouvée');
+  const slug = formationSlug(name);
+  const dir = path.join(FORMATIONS_DIR, slug);
+
+  let filepath, downloadName;
+  if (STANDARD_PJ_TYPES.includes(type)) {
+    const att = formation.attachments && formation.attachments[type];
+    if (!att) return res.status(404).send('Pièce jointe non trouvée');
+    filepath = path.join(dir, att.filename);
+    downloadName = att.originalName || att.filename;
+  } else if (type === 'autre') {
+    if (!id) return res.status(400).send('ID requis');
+    const doc = (formation.autresDocs || []).find(d => d.id === id);
+    if (!doc) return res.status(404).send('Document non trouvé');
+    filepath = path.join(dir, 'autres', doc.filename);
+    downloadName = doc.originalName || doc.filename;
+  } else {
+    return res.status(400).send('Type invalide');
+  }
+  if (!fs.existsSync(filepath)) return res.status(404).send('Fichier physique manquant sur le serveur');
+  res.download(filepath, downloadName);
 });
 
 // ============ CANDIDATES ============

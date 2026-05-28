@@ -402,6 +402,9 @@
         'arrow-down': <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
         'grip-vertical': <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>,
         download: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+        book: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
+        'external-link': <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+        file: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>,
       };
       return icons[name] || null;
     }
@@ -796,6 +799,9 @@
             <div className={`tab ${activeTab === 'doublons' ? 'active' : ''}`} onClick={() => setActiveTab('doublons')}>
               Doublons {duplicates.total > 0 && <span className="badge" style={{ background: '#F39C12' }}>{duplicates.total}</span>}
             </div>
+            <div className={`tab ${activeTab === 'formations' ? 'active' : ''}`} onClick={() => setActiveTab('formations')}>
+              Formations
+            </div>
           </div>
 
           {(activeTab === 'kanban' || activeTab === 'liste') && (
@@ -872,6 +878,10 @@
               onMerge={mergeDuplicates}
               onRefresh={loadStats}
             />
+          )}
+
+          {activeTab === 'formations' && (
+            <FormationsView api={api} onConfigReload={loadData} />
           )}
 
           {selectedCandidate && (
@@ -1806,6 +1816,383 @@
               })}
             </div>
           ))}
+        </div>
+      );
+    }
+
+    // ============ FORMATIONS VIEW ============
+    // Onglet de gestion des formations CLEM : CRUD + PJ standards (programme, calendrier, fiche produit)
+    // + zone "Autres documents" libre. Les PJ sont stockées sur le serveur dans data/formations/<slug>/.
+    function FormationsView({ api, onConfigReload }) {
+      const [formations, setFormations] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [editing, setEditing] = useState(null); // null | { mode: 'create' | 'edit', formation: {...} }
+      const [error, setError] = useState(null);
+
+      const load = useCallback(async () => {
+        setLoading(true);
+        try {
+          const r = await api('/formations');
+          setFormations(r.formations || []);
+          setError(null);
+        } catch (e) { setError('Erreur de chargement : ' + (e.message || e)); }
+        setLoading(false);
+      }, [api]);
+
+      useEffect(() => { load(); }, [load]);
+
+      const handleDelete = async (name) => {
+        if (!confirm(`Supprimer la formation "${name}" et toutes ses pièces jointes ?`)) return;
+        await api('/formations/' + encodeURIComponent(name), { method: 'DELETE' });
+        await load();
+        if (onConfigReload) onConfigReload();
+      };
+
+      const NIVEAU_COLORS = {
+        'Bac': '#94a3b8', 'Bac+2': '#3b82f6', 'Bac+3': '#8b5cf6',
+        'Bac+4': '#ec4899', 'Bac+5': '#f59e0b', 'Pro': '#10b981'
+      };
+
+      if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Chargement des formations...</div>;
+
+      return (
+        <div style={{ padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, fontFamily: 'Inter Tight, Inter, sans-serif' }}>
+              Formations <span style={{ color: '#94a3b8', fontWeight: 600, fontSize: 16 }}>({formations.length})</span>
+            </h2>
+            <button className="btn btn-primary" onClick={() => setEditing({ mode: 'create', formation: {} })}>
+              <Icon name="plus" size={14} /> Nouvelle formation
+            </button>
+          </div>
+
+          {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
+
+          {formations.length === 0 ? (
+            <div style={{ background: 'white', padding: 60, borderRadius: 12, textAlign: 'center', color: '#94a3b8' }}>
+              <Icon name="book" size={40} color="#cbd5e1" />
+              <p style={{ marginTop: 16, fontSize: 14 }}>Aucune formation pour le moment.</p>
+              <p style={{ fontSize: 13 }}>Cliquez sur "Nouvelle formation" pour commencer.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+              {formations.map(f => {
+                const pjCount = Object.keys(f.attachments || {}).length + (f.autresDocs || []).length;
+                const niveauColor = NIVEAU_COLORS[f.niveau] || '#64748b';
+                return (
+                  <div key={f.name} style={{ background: 'white', borderRadius: 12, padding: 18, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}
+                    onClick={() => setEditing({ mode: 'edit', formation: f })}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', fontFamily: 'Inter Tight, Inter, sans-serif', lineHeight: 1.2 }}>{f.name}</h3>
+                        {f.libelle && <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{f.libelle}</div>}
+                      </div>
+                      {f.niveau && (
+                        <span style={{ background: niveauColor + '22', color: niveauColor, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 8, whiteSpace: 'nowrap' }}>{f.niveau}</span>
+                      )}
+                    </div>
+                    {f.rncp && (
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
+                        <strong>RNCP :</strong> {f.rncp}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, color: '#64748b', background: '#f1f5f9', padding: '3px 8px', borderRadius: 6 }}>
+                        📎 {pjCount} {pjCount > 1 ? 'pièces' : 'pièce'}
+                      </span>
+                      {f.franceCompetencesUrl && (
+                        <span style={{ fontSize: 11, color: '#0369a1', background: '#e0f2fe', padding: '3px 8px', borderRadius: 6 }}>
+                          🔗 France Compétences
+                        </span>
+                      )}
+                      {f.conseiller && (
+                        <span style={{ fontSize: 11, color: '#64748b' }}>
+                          Conseiller : <strong>{f.conseiller}</strong>
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, gap: 8 }} onClick={e => e.stopPropagation()}>
+                      <button className="btn btn-sm btn-outline" onClick={() => setEditing({ mode: 'edit', formation: f })}>
+                        <Icon name="edit" size={12} /> Éditer
+                      </button>
+                      <button className="btn btn-sm" style={{ background: '#fee2e2', color: '#991b1b', border: 'none' }} onClick={() => handleDelete(f.name)}>
+                        <Icon name="trash" size={12} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {editing && (
+            <FormationEditor
+              mode={editing.mode}
+              formation={editing.formation}
+              api={api}
+              onClose={() => setEditing(null)}
+              onSaved={async () => { await load(); if (onConfigReload) onConfigReload(); }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // ============ FORMATION EDITOR MODAL ============
+    function FormationEditor({ mode, formation, api, onClose, onSaved }) {
+      const isEdit = mode === 'edit';
+      const [form, setForm] = useState({
+        name: formation.name || '',
+        libelle: formation.libelle || '',
+        niveau: formation.niveau || '',
+        rncp: formation.rncp || '',
+        franceCompetencesUrl: formation.franceCompetencesUrl || '',
+        conseiller: formation.conseiller || ''
+      });
+      const [attachments, setAttachments] = useState(formation.attachments || {});
+      const [autresDocs, setAutresDocs] = useState(formation.autresDocs || []);
+      const [saving, setSaving] = useState(false);
+      const [uploading, setUploading] = useState(null); // type en cours d'upload
+      const [error, setError] = useState(null);
+      const [newOtherLabel, setNewOtherLabel] = useState('');
+
+      const NIVEAUX = ['Bac', 'Bac+2', 'Bac+3', 'Bac+4', 'Bac+5', 'Pro'];
+      const PJ_LABELS = { programme: 'Programme', calendrier: 'Calendrier de formation', ficheProduit: 'Fiche produit' };
+
+      const handleChange = (field, value) => setForm(f => ({ ...f, [field]: value }));
+
+      const handleSave = async () => {
+        if (!form.name.trim()) { setError('Le nom est requis'); return; }
+        setSaving(true); setError(null);
+        try {
+          if (isEdit) {
+            const r = await api('/formations/' + encodeURIComponent(formation.name), { method: 'PUT', body: form });
+            if (r.error) throw new Error(r.error);
+          } else {
+            const r = await api('/formations', { method: 'POST', body: form });
+            if (r.error) throw new Error(r.error);
+          }
+          await onSaved();
+          onClose();
+        } catch (e) {
+          setError(e.message || 'Erreur lors de la sauvegarde');
+        }
+        setSaving(false);
+      };
+
+      // Upload d'un fichier (PJ standard ou autre doc) — utilise fetch direct car multipart/form-data
+      const uploadFile = async (type, file, label) => {
+        if (!isEdit) { setError('Sauvegardez d\'abord la formation avant d\'ajouter des PJ.'); return; }
+        if (!file) return;
+        if (file.size > 20 * 1024 * 1024) { setError('Fichier trop volumineux (max 20 Mo)'); return; }
+        if (!file.name.toLowerCase().endsWith('.pdf')) { setError('Seuls les PDF sont acceptés'); return; }
+        setUploading(type + (label || '')); setError(null);
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          if (label) fd.append('label', label);
+          const url = '/parcoursup/api/formations/' + encodeURIComponent(formation.name) + '/upload/' + type;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + getToken() },
+            body: fd
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) throw new Error(data.error || 'Upload échoué');
+          setAttachments(data.attachments || {});
+          setAutresDocs(data.autresDocs || []);
+          await onSaved();
+        } catch (e) {
+          setError(e.message || 'Erreur upload');
+        }
+        setUploading(null);
+      };
+
+      const deleteAttachment = async (type, id) => {
+        if (!confirm('Supprimer cette pièce jointe ?')) return;
+        try {
+          const url = '/formations/' + encodeURIComponent(formation.name) + '/attachment/' + type + (id ? '/' + id : '');
+          await api(url, { method: 'DELETE' });
+          if (type === 'autre') {
+            setAutresDocs(docs => docs.filter(d => d.id !== id));
+          } else {
+            setAttachments(a => { const cp = { ...a }; delete cp[type]; return cp; });
+          }
+          await onSaved();
+        } catch (e) { setError(e.message); }
+      };
+
+      // Téléchargement : fetch avec auth, blob, simulate download click
+      const downloadAttachment = async (type, id, defaultName) => {
+        try {
+          const url = '/parcoursup/api/formations/' + encodeURIComponent(formation.name) + '/download/' + type + (id ? '/' + id : '');
+          const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + getToken() } });
+          if (!res.ok) throw new Error('Téléchargement échoué (' + res.status + ')');
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = defaultName || 'document.pdf';
+          document.body.appendChild(a); a.click(); a.remove();
+          URL.revokeObjectURL(blobUrl);
+        } catch (e) { setError(e.message); }
+      };
+
+      const fmtSize = (s) => s < 1024 * 1024 ? Math.round(s / 1024) + ' Ko' : (s / 1024 / 1024).toFixed(1) + ' Mo';
+
+      // Rendu d'une zone PJ standard (programme/calendrier/ficheProduit)
+      const renderPJZone = (type) => {
+        const att = attachments[type];
+        const isUploading = uploading === type;
+        return (
+          <div style={{ background: '#f8fafc', borderRadius: 10, padding: 14, border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <strong style={{ fontSize: 13 }}>{PJ_LABELS[type]}</strong>
+              {att && <span style={{ fontSize: 10, color: '#94a3b8' }}>{fmtSize(att.size || 0)}</span>}
+            </div>
+            {att ? (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button className="btn btn-sm" style={{ background: '#DDE04B', color: '#111', border: '1.5px solid #111', flex: 1, fontWeight: 700 }} onClick={() => downloadAttachment(type, null, att.originalName)}>
+                  <Icon name="download" size={12} /> Télécharger
+                </button>
+                <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer', margin: 0 }}>
+                  <Icon name="upload" size={12} /> Remplacer
+                  <input type="file" accept="application/pdf,.pdf" style={{ display: 'none' }} onChange={e => uploadFile(type, e.target.files[0])} disabled={isUploading} />
+                </label>
+                <button className="btn btn-sm" style={{ background: '#fee2e2', color: '#991b1b', border: 'none' }} onClick={() => deleteAttachment(type, null)}>
+                  <Icon name="trash" size={12} />
+                </button>
+              </div>
+            ) : (
+              <label className="btn btn-sm btn-outline" style={{ cursor: isEdit ? 'pointer' : 'not-allowed', width: '100%', justifyContent: 'center', opacity: isEdit ? 1 : 0.5 }}>
+                {isUploading ? '⏳ Upload...' : <><Icon name="upload" size={12} /> Ajouter PDF</>}
+                <input type="file" accept="application/pdf,.pdf" style={{ display: 'none' }} onChange={e => uploadFile(type, e.target.files[0])} disabled={!isEdit || isUploading} />
+              </label>
+            )}
+          </div>
+        );
+      };
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ width: 760, maxHeight: '92vh' }}>
+            <div className="modal-header">
+              <h2 style={{ fontFamily: 'Inter Tight, Inter, sans-serif' }}>
+                {isEdit ? 'Éditer la formation' : 'Nouvelle formation'}
+              </h2>
+              <button className="btn btn-icon btn-outline" onClick={onClose}><Icon name="x" size={18} /></button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {error && <div style={{ background: '#fee2e2', color: '#991b1b', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
+
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 2 }}>
+                  <label>Nom de la formation *</label>
+                  <input value={form.name} onChange={e => handleChange('name', e.target.value)} placeholder="Ex: BTS COMMUNICATION" autoFocus />
+                </div>
+                <div className="form-group">
+                  <label>Niveau</label>
+                  <select value={form.niveau} onChange={e => handleChange('niveau', e.target.value)}>
+                    <option value="">-- Choisir --</option>
+                    {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Libellé long</label>
+                  <input value={form.libelle} onChange={e => handleChange('libelle', e.target.value)} placeholder="Ex: BTS Communication" />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>N° RNCP</label>
+                  <input value={form.rncp} onChange={e => handleChange('rncp', e.target.value)} placeholder="Ex: RNCP38379" />
+                </div>
+                <div className="form-group">
+                  <label>Conseiller en formation</label>
+                  <input value={form.conseiller} onChange={e => handleChange('conseiller', e.target.value)} placeholder="Nom du conseiller" />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Lien France Compétences</label>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input value={form.franceCompetencesUrl} onChange={e => handleChange('franceCompetencesUrl', e.target.value)} placeholder="https://www.francecompetences.fr/..." style={{ flex: 1 }} />
+                    {form.franceCompetencesUrl && (
+                      <a href={form.franceCompetencesUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline" style={{ whiteSpace: 'nowrap' }}>
+                        <Icon name="external-link" size={12} /> Ouvrir
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* === PIÈCES JOINTES === */}
+              <div style={{ marginTop: 24 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#0f172a' }}>Pièces jointes</h3>
+                {!isEdit && (
+                  <div style={{ background: '#fef3c7', color: '#92400e', padding: 10, borderRadius: 8, marginBottom: 12, fontSize: 12 }}>
+                    💡 Sauvegardez d'abord la formation pour pouvoir ajouter des pièces jointes.
+                  </div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  {renderPJZone('programme')}
+                  {renderPJZone('calendrier')}
+                  {renderPJZone('ficheProduit')}
+                </div>
+              </div>
+
+              {/* === AUTRES DOCUMENTS === */}
+              {isEdit && (
+                <div style={{ marginTop: 24 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#0f172a' }}>Autres documents</h3>
+                  {autresDocs.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                      {autresDocs.map(doc => (
+                        <div key={doc.id} style={{ background: '#f8fafc', borderRadius: 8, padding: 10, display: 'flex', alignItems: 'center', gap: 10, border: '1px solid #e2e8f0' }}>
+                          <Icon name="file" size={16} color="#64748b" />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{doc.label}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>{doc.originalName} · {fmtSize(doc.size || 0)}</div>
+                          </div>
+                          <button className="btn btn-sm" style={{ background: '#DDE04B', color: '#111', border: '1.5px solid #111', fontWeight: 700 }} onClick={() => downloadAttachment('autre', doc.id, doc.originalName)}>
+                            <Icon name="download" size={12} /> Télécharger
+                          </button>
+                          <button className="btn btn-sm" style={{ background: '#fee2e2', color: '#991b1b', border: 'none' }} onClick={() => deleteAttachment('autre', doc.id)}>
+                            <Icon name="trash" size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ background: '#f8fafc', borderRadius: 8, padding: 12, border: '1px dashed #cbd5e1', display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input value={newOtherLabel} onChange={e => setNewOtherLabel(e.target.value)} placeholder="Nom du document (ex: CGV, Tarif 2026)" style={{ flex: 1, fontSize: 13 }} />
+                    <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer', margin: 0, whiteSpace: 'nowrap' }}>
+                      <Icon name="upload" size={12} /> Ajouter PDF
+                      <input type="file" accept="application/pdf,.pdf" style={{ display: 'none' }} onChange={e => {
+                        if (!newOtherLabel.trim()) { setError('Donnez d\'abord un nom au document'); return; }
+                        uploadFile('autre', e.target.files[0], newOtherLabel.trim());
+                        setNewOtherLabel('');
+                      }} disabled={uploading === 'autre' + newOtherLabel} />
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={onClose}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving || !form.name.trim()}>
+                {saving ? 'Sauvegarde...' : (isEdit ? 'Enregistrer' : 'Créer')}
+              </button>
+            </div>
+          </div>
         </div>
       );
     }

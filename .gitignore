@@ -7,4 +7,5 @@ Thumbs.db
 .wwebjs_cache/
 data/.wwebjs_auth/
 data/parcoursup-config.json
+data/formations/
 .claude/settings.local.json
