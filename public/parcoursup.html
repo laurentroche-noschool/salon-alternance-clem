@@ -963,17 +963,9 @@
       return (
         <div className="filter-bar">
           <Icon name="filter" size={16} color="#888" />
-          <select value={filters.ecole} onChange={e => setFilters(f => ({ ...f, ecole: e.target.value, formation: '' }))}>
-            <option value="">Toutes les écoles</option>
-            {Object.keys(config.ecoles).map(e => <option key={e} value={e}>{e}</option>)}
-          </select>
           <select value={filters.formation} onChange={e => setFilters(f => ({ ...f, formation: e.target.value }))}>
             <option value="">Toutes les formations</option>
             {availableFormations.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
-          <select value={filters.charge} onChange={e => setFilters(f => ({ ...f, charge: e.target.value }))}>
-            <option value="">Tous les chargés</option>
-            {config.chargesAdmission.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <select value={filters.conseiller} onChange={e => setFilters(f => ({ ...f, conseiller: e.target.value }))}>
             <option value="">Tous les conseillers</option>
@@ -1155,11 +1147,6 @@
                     onDragEnd={handleDragEnd}
                     onClick={() => onCardClick(c)}
                   >
-                    {c.statutCRM && (
-                      <div className="card-crm" style={{ background: '#2ECC71', color: 'white' }} title="Déjà dans le CRM">
-                        <Icon name="check" size={12} />
-                      </div>
-                    )}
                     <div className="card-name">
                       {c.genre && <span title={c.genre === 'F' ? 'Fille' : 'Garçon'} style={{ marginRight: 4 }}>{c.genre === 'F' ? '♀' : '♂'}</span>}
                       {c.prenom} {c.nom}
@@ -1168,22 +1155,12 @@
                     <div className="card-formation">
                       {c.formation}
                       {c.dateNaissance && (() => { const b = new Date(c.dateNaissance); const now = new Date(); let age = now.getFullYear() - b.getFullYear(); if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--; return <span style={{ marginLeft: 8, color: '#94a3b8', fontSize: 10, fontWeight: 600 }}>{age} ans</span>; })()}
-                      {c.numeroDossier && <span style={{ marginLeft: 6, color: '#94a3b8', fontSize: 10 }}>#{c.numeroDossier}</span>}
                     </div>
                     <div className="card-meta">
-                      <span className="card-badge" style={{ background: ecoleColor + '22', color: ecoleColor }}>{c.ecole}</span>
-                      {duplicateInfo[c.id] && duplicateInfo[c.id].otherEcoles.length > 0 && (
-                        <span className="card-badge" title={'Aussi dans : ' + duplicateInfo[c.id].otherEcoles.join(', ')} style={{ background: '#E74C3C', color: 'white', fontWeight: 700, fontSize: 9 }}>
-                          🔀 Multi-école
-                        </span>
-                      )}
                       {duplicateInfo[c.id] && duplicateInfo[c.id].otherFormations.length > 0 && (
                         <span className="card-badge" title={'Autres formations : ' + duplicateInfo[c.id].otherFormations.join(', ')} style={{ background: '#F39C12', color: 'white', fontWeight: 700, fontSize: 9 }}>
                           🔀 Multi-formation
                         </span>
-                      )}
-                      {c.chargeAdmission && (
-                        <span className="card-badge" style={{ background: '#f0f0f0', color: '#555' }}>{c.chargeAdmission}</span>
                       )}
                       {relCount > 0 && (
                         <span className="card-relance-count" title="Relances">
@@ -1247,34 +1224,27 @@
                 <tr>
                   <th onClick={() => onSort('nom')}>Nom{arrow('nom')}</th>
                   <th onClick={() => onSort('prenom')}>Prénom{arrow('prenom')}</th>
-                  <th onClick={() => onSort('ecole')}>École{arrow('ecole')}</th>
                   <th onClick={() => onSort('formation')}>Formation{arrow('formation')}</th>
                   <th onClick={() => onSort('stage')}>Stage{arrow('stage')}</th>
-                  <th onClick={() => onSort('chargeAdmission')}>Chargé Adm.{arrow('chargeAdmission')}</th>
                   <th onClick={() => onSort('conseillerFormation')}>Conseiller{arrow('conseillerFormation')}</th>
                   <th>Tél</th>
                   <th>Email</th>
-                  <th>CRM</th>
                   <th>Relances</th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.map(c => {
-                  const ecoleColor = config.ecoles[c.ecole]?.color || '#999';
                   const stageInfo = config.stages.find(s => s.id === c.stage);
                   const relCount = relances.filter(r => r.candidateId === c.id).length;
                   return (
                     <tr key={c.id} onClick={() => onRowClick(c)} style={{ cursor: 'pointer' }}>
                       <td><strong>{c.nom}</strong></td>
                       <td>{c.prenom}</td>
-                      <td><span className="ecole-badge" style={{ background: ecoleColor }}>{c.ecole}</span></td>
                       <td>{c.formation}</td>
                       <td><span className="stage-badge" style={{ background: stageInfo?.color || '#999' }}>{stageInfo?.label || c.stage}</span></td>
-                      <td>{c.chargeAdmission}</td>
                       <td>{c.conseillerFormation}</td>
                       <td>{c.telephone}</td>
                       <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.email}</td>
-                      <td>{c.statutCRM ? <Icon name="check" size={16} color="#2ECC71" /> : ''}</td>
                       <td>{relCount > 0 ? relCount : ''}</td>
                     </tr>
                   );
@@ -2001,11 +1971,7 @@
                   </div>
                 </div>
                 <div className="form-row">
-                  <div className="form-group" style={{ flex: '0 0 120px' }}>
-                    <label>N° Candidat</label>
-                    <input value={form.numeroDossier || ''} onChange={e => handleChange('numeroDossier', e.target.value.slice(0, 6))} placeholder="6 car." maxLength={6} />
-                  </div>
-                  <div className="form-group" style={{ flex: '0 0 100px' }}>
+                  <div className="form-group" style={{ flex: '0 0 140px' }}>
                     <label>Genre</label>
                     <select value={form.genre || ''} onChange={e => handleChange('genre', e.target.value)}>
                       <option value="">--</option>
@@ -2050,26 +2016,10 @@
                 <h3>Affectation</h3>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>École</label>
-                    <select value={form.ecole} onChange={e => handleChange('ecole', e.target.value)}>
-                      <option value="">--</option>
-                      {Object.keys(config.ecoles).map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
                     <label>Formation</label>
                     <select value={form.formation} onChange={e => handleChange('formation', e.target.value)}>
                       <option value="">--</option>
                       {formations.map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Chargé d'admission</label>
-                    <select value={form.chargeAdmission} onChange={e => handleChange('chargeAdmission', e.target.value)}>
-                      <option value="">--</option>
-                      {config.chargesAdmission.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
@@ -2083,15 +2033,6 @@
                     <select value={form.stage} onChange={e => handleChange('stage', e.target.value)}>
                       {config.stages.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
-                  </div>
-                  <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
-                    <label
-                      className="toggle"
-                      onClick={() => handleChange('statutCRM', !form.statutCRM)}
-                    >
-                      <div className={`toggle-switch ${form.statutCRM ? 'on' : ''}`} />
-                      Déjà dans le CRM
-                    </label>
                   </div>
                 </div>
               </div>
@@ -2295,11 +2236,14 @@
 
     // ============ ADD CANDIDATE MODAL ============
     function AddCandidateModal({ config, onClose, onAdd }) {
+      // ecole auto-affectée à la 1re école dispo (CLEM en config CLEM mono-école)
+      // pour garder la cascade école -> formation -> conseiller fonctionnelle sans champ visible.
+      const defaultEcole = Object.keys(config.ecoles || {})[0] || '';
       const [form, setForm] = useState({
         numeroDossier: '', genre: '', dateNaissance: '',
         nom: '', prenom: '', telephone: '', email: '',
         adresse: '', codePostal: '', ville: '',
-        ecole: '', formation: '', chargeAdmission: '', conseillerFormation: '',
+        ecole: defaultEcole, formation: '', chargeAdmission: '', conseillerFormation: '',
         stage: 'sas_entree', statutCRM: false, notes: ''
       });
 
@@ -2344,11 +2288,7 @@
                 </div>
               </div>
               <div className="form-row">
-                <div className="form-group" style={{ flex: '0 0 120px' }}>
-                  <label>N° Candidat</label>
-                  <input value={form.numeroDossier} onChange={e => handleChange('numeroDossier', e.target.value.slice(0, 6))} placeholder="6 car." maxLength={6} />
-                </div>
-                <div className="form-group" style={{ flex: '0 0 100px' }}>
+                <div className="form-group" style={{ flex: '0 0 140px' }}>
                   <label>Genre</label>
                   <select value={form.genre} onChange={e => handleChange('genre', e.target.value)}>
                     <option value="">--</option>
@@ -2389,42 +2329,16 @@
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>École</label>
-                  <select value={form.ecole} onChange={e => handleChange('ecole', e.target.value)}>
-                    <option value="">-- Choisir --</option>
-                    {Object.keys(config.ecoles).map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
                   <label>Formation</label>
                   <select value={form.formation} onChange={e => handleChange('formation', e.target.value)}>
                     <option value="">-- Choisir --</option>
                     {formations.map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Chargé d'admission</label>
-                  <select value={form.chargeAdmission} onChange={e => handleChange('chargeAdmission', e.target.value)}>
-                    <option value="">-- Choisir --</option>
-                    {config.chargesAdmission.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
                 <div className="form-group">
                   <label>Conseiller en formation</label>
                   <input value={form.conseillerFormation} onChange={e => handleChange('conseillerFormation', e.target.value)} placeholder="Auto-rempli ou saisie libre" />
                 </div>
-              </div>
-              <div className="form-group">
-                <label
-                  className="toggle"
-                  onClick={() => handleChange('statutCRM', !form.statutCRM)}
-                  style={{ marginTop: 8 }}
-                >
-                  <div className={`toggle-switch ${form.statutCRM ? 'on' : ''}`} />
-                  Déjà inscrit dans le CRM
-                </label>
               </div>
             </div>
             <div className="modal-footer">
@@ -2595,17 +2509,9 @@
                       )}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                      <select value={bsFilters.ecole} onChange={e => setBsFilters(f => ({ ...f, ecole: e.target.value, formation: '' }))} style={{ fontSize: 12 }}>
-                        <option value="">Toutes les écoles</option>
-                        {availableEcoles.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
                       <select value={bsFilters.formation} onChange={e => setBsFilters(f => ({ ...f, formation: e.target.value }))} style={{ fontSize: 12 }}>
                         <option value="">Toutes les formations</option>
                         {availableFormations.map(v => <option key={v} value={v}>{v}</option>)}
-                      </select>
-                      <select value={bsFilters.charge} onChange={e => setBsFilters(f => ({ ...f, charge: e.target.value }))} style={{ fontSize: 12 }}>
-                        <option value="">Tous les chargés</option>
-                        {availableCharges.map(v => <option key={v} value={v}>{v}</option>)}
                       </select>
                       <select value={bsFilters.conseiller} onChange={e => setBsFilters(f => ({ ...f, conseiller: e.target.value }))} style={{ fontSize: 12 }}>
                         <option value="">Tous les conseillers</option>
@@ -4221,13 +4127,13 @@
                     <table>
                       <thead>
                         <tr>
-                          <th>Nom</th><th>Prénom</th><th>Email</th><th>Tél</th><th>École</th><th>Formation</th>
+                          <th>Nom</th><th>Prénom</th><th>Email</th><th>Tél</th><th>Formation</th>
                         </tr>
                       </thead>
                       <tbody>
                         {preview.slice(0, 15).map((c, i) => (
                           <tr key={i}>
-                            <td>{c.nom}</td><td>{c.prenom}</td><td>{c.email}</td><td>{c.telephone}</td><td>{c.ecole}</td><td>{c.formation}</td>
+                            <td>{c.nom}</td><td>{c.prenom}</td><td>{c.email}</td><td>{c.telephone}</td><td>{c.formation}</td>
                           </tr>
                         ))}
                       </tbody>
