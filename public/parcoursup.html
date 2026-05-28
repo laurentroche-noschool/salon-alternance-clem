@@ -1298,24 +1298,29 @@
         <span className="badge-pill" style={{ background: bg, color, fontWeight: bold ? 800 : 700 }}>{value}</span>
       );
 
+      // Mono-école : on cache toute la logique de filtre/répartition par école
+      const isMultiEcole = ecoles.length > 1;
+
       return (
         <div className="dashboard">
 
-          {/* ===== FILTRE ECOLE ===== */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button className={`btn btn-sm ${!selectedEcole ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => { setSelectedEcole(null); setSelectedCharge(null); }}
-              style={{ fontSize: 13, fontWeight: 700 }}>
-              Groupe ({globalStats.total})
-            </button>
-            {ecoles.map(ecole => (
-              <button key={ecole} className={`btn btn-sm ${selectedEcole === ecole ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => { setSelectedEcole(ecole); setSelectedCharge(null); }}
-                style={selectedEcole === ecole ? { fontSize: 13, fontWeight: 700, background: config.ecoles[ecole].color, borderColor: config.ecoles[ecole].color } : { fontSize: 13, fontWeight: 700, color: config.ecoles[ecole].color, borderColor: config.ecoles[ecole].color }}>
-                {ecole} ({globalStats.parEcole[ecole] || 0})
+          {/* ===== FILTRE ECOLE (uniquement si plusieurs écoles) ===== */}
+          {isMultiEcole && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button className={`btn btn-sm ${!selectedEcole ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => { setSelectedEcole(null); setSelectedCharge(null); }}
+                style={{ fontSize: 13, fontWeight: 700 }}>
+                Groupe ({globalStats.total})
               </button>
-            ))}
-          </div>
+              {ecoles.map(ecole => (
+                <button key={ecole} className={`btn btn-sm ${selectedEcole === ecole ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => { setSelectedEcole(ecole); setSelectedCharge(null); }}
+                  style={selectedEcole === ecole ? { fontSize: 13, fontWeight: 700, background: config.ecoles[ecole].color, borderColor: config.ecoles[ecole].color } : { fontSize: 13, fontWeight: 700, color: config.ecoles[ecole].color, borderColor: config.ecoles[ecole].color }}>
+                  {ecole} ({globalStats.parEcole[ecole] || 0})
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* ===== SECTION 1 : VUE D'ENSEMBLE ===== */}
           <div className="dashboard-section-title"><span className="icon">&#x1F4CA;</span> {selectedEcole ? `${selectedEcole}` : "Vue d'ensemble"}</div>
@@ -1327,7 +1332,7 @@
               <div className="value" style={{ color: 'white' }}>{stats.total}</div>
               <div className="kpi-icon" style={{ color: 'rgba(255,255,255,0.15)' }}>&#x1F465;</div>
             </div>
-            {!selectedEcole && Object.entries(config.ecoles).map(([name, ecole]) => (
+            {isMultiEcole && !selectedEcole && Object.entries(config.ecoles).map(([name, ecole]) => (
               <div key={name} className="kpi-card kpi-card-accent" style={{ borderLeftColor: ecole.color, cursor: 'pointer' }}
                 onClick={() => { setSelectedEcole(name); setSelectedCharge(null); }}>
                 <div className="label" style={{ color: ecole.color }}>{name}</div>
@@ -1338,7 +1343,7 @@
             <div className="kpi-card" style={{ background: 'linear-gradient(135deg, #d4efdf 0%, #eafaf1 100%)' }}>
               <div className="label" style={{ color: '#1e8449' }}>Taux conversion</div>
               <div className="value" style={{ color: '#27ae60' }}>{stats.conversion}%</div>
-              <div className="sub" style={{ color: '#1e8449' }}>Voeu &rarr; Inscrit</div>
+              <div className="sub" style={{ color: '#1e8449' }}>SAS ENTRÉE &rarr; Inscrit</div>
             </div>
             <div className="kpi-card kpi-card-accent" style={{ borderLeftColor: '#1a1a1a' }}>
               <div className="label">Dans le CRM</div>
@@ -1379,29 +1384,31 @@
               </div>
             </div>
 
-            <div className="chart-container">
-              <h3><span className="chart-icon">&#x1F4C8;</span> Répartition par école</h3>
-              <ChartComponent
-                type="doughnut"
-                height={280}
-                data={{
-                  labels: Object.keys(config.ecoles),
-                  datasets: [{
-                    data: Object.keys(config.ecoles).map(e => stats.parEcole[e] || 0),
-                    backgroundColor: Object.values(config.ecoles).map(e => e.color),
-                    borderWidth: 3, borderColor: '#fff',
-                    hoverBorderWidth: 0,
-                  }]
-                }}
-                options={{
-                  cutout: '55%',
-                  plugins: {
-                    legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 13, weight: '600' } } },
-                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw} (${stats.total > 0 ? Math.round(ctx.raw / stats.total * 100) : 0}%)` } }
-                  }
-                }}
-              />
-            </div>
+            {isMultiEcole && (
+              <div className="chart-container">
+                <h3><span className="chart-icon">&#x1F4C8;</span> Répartition par école</h3>
+                <ChartComponent
+                  type="doughnut"
+                  height={280}
+                  data={{
+                    labels: Object.keys(config.ecoles),
+                    datasets: [{
+                      data: Object.keys(config.ecoles).map(e => stats.parEcole[e] || 0),
+                      backgroundColor: Object.values(config.ecoles).map(e => e.color),
+                      borderWidth: 3, borderColor: '#fff',
+                      hoverBorderWidth: 0,
+                    }]
+                  }}
+                  options={{
+                    cutout: '55%',
+                    plugins: {
+                      legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle', font: { size: 13, weight: '600' } } },
+                      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw} (${stats.total > 0 ? Math.round(ctx.raw / stats.total * 100) : 0}%)` } }
+                    }
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* ===== SECTION 3 : GRAPHIQUES D'ACTIVITE ===== */}
@@ -1429,25 +1436,27 @@
               />
             </div>
 
-            <div className="chart-container">
-              <h3><span className="chart-icon">&#x1F3EB;</span> Ecole &times; Etape</h3>
-              <ChartComponent
-                type="bar"
-                height={280}
-                data={{
-                  labels: Object.keys(config.ecoles),
-                  datasets: config.stages.filter(s => !['refuse', 'abandonne'].includes(s.id)).map(stage => ({
-                    label: stage.label,
-                    data: Object.keys(config.ecoles).map(ecole => (stats.parEcoleStage[ecole] || {})[stage.id] || 0),
-                    backgroundColor: stage.color + 'DD', borderRadius: 3,
-                  }))
-                }}
-                options={{
-                  plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 12, font: { size: 11 } } } },
-                  scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f2f5' } } }
-                }}
-              />
-            </div>
+            {isMultiEcole && (
+              <div className="chart-container">
+                <h3><span className="chart-icon">&#x1F3EB;</span> Ecole &times; Etape</h3>
+                <ChartComponent
+                  type="bar"
+                  height={280}
+                  data={{
+                    labels: Object.keys(config.ecoles),
+                    datasets: config.stages.filter(s => !['refuse', 'abandonne'].includes(s.id)).map(stage => ({
+                      label: stage.label,
+                      data: Object.keys(config.ecoles).map(ecole => (stats.parEcoleStage[ecole] || {})[stage.id] || 0),
+                      backgroundColor: stage.color + 'DD', borderRadius: 3,
+                    }))
+                  }}
+                  options={{
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 12, font: { size: 11 } } } },
+                    scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f0f2f5' } } }
+                  }}
+                />
+              </div>
+            )}
 
             {Object.keys(stats.relancesParJour).length > 0 && (
               <div className="chart-container" style={{ gridColumn: '1 / -1' }}>
@@ -4532,7 +4541,7 @@
               {step === 3 && (
                 <>
                   <p style={{ marginBottom: 16, fontSize: 14 }}>
-                    <strong>{preview.length}</strong> candidats prêts à importer (stage: Voeu reçu)
+                    <strong>{preview.length}</strong> candidats prêts à importer (stage: SAS ENTRÉE)
                   </p>
                   <div className="preview-table">
                     <table>
