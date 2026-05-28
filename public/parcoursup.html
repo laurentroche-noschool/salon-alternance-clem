@@ -2626,12 +2626,14 @@
       // ecole auto-affectée à la 1re école dispo (CLEM en config CLEM mono-école)
       // pour garder la cascade école -> formation -> conseiller fonctionnelle sans champ visible.
       const defaultEcole = Object.keys(config.ecoles || {})[0] || '';
+      // stage initial = 1re étape Kanban configurée (sinon le candidat n'apparaîtrait dans aucune colonne)
+      const defaultStage = (config.stages && config.stages[0] && config.stages[0].id) || 'voeu_recu';
       const [form, setForm] = useState({
         numeroDossier: '', genre: '', dateNaissance: '',
         nom: '', prenom: '', telephone: '', email: '',
         adresse: '', codePostal: '', ville: '',
         ecole: defaultEcole, formation: '', chargeAdmission: '', conseillerFormation: '',
-        stage: 'sas_entree', statutCRM: false, notes: ''
+        stage: defaultStage, statutCRM: false, notes: ''
       });
 
       const handleChange = (field, value) => {
@@ -4146,34 +4148,42 @@
       // Count candidates per stage
       const candidateCount = (stageId) => candidates.filter(c => c.stage === stageId).length;
 
-      // Rename
+      // Rename — bloqué pour les colonnes locked (ex: SAS ENTRÉE)
       const handleRename = (idx, newLabel) => {
+        if (stages[idx].locked) return;
         const updated = [...stages];
         updated[idx] = { ...updated[idx], label: newLabel };
         setStages(updated);
       };
 
-      // Move up
+      // Move up — bloqué si la cible (idx-1) est locked, pour garder la locked en position 0
       const handleMoveUp = (idx) => {
         if (idx <= 0) return;
+        if (stages[idx].locked) return;
+        if (stages[idx - 1] && stages[idx - 1].locked) return;
         const updated = [...stages];
         [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
         updated.forEach((s, i) => s.order = i);
         setStages(updated);
       };
 
-      // Move down
+      // Move down — bloqué pour les colonnes locked
       const handleMoveDown = (idx) => {
         if (idx >= stages.length - 1) return;
+        if (stages[idx].locked) return;
         const updated = [...stages];
         [updated[idx], updated[idx + 1]] = [updated[idx + 1], updated[idx]];
         updated.forEach((s, i) => s.order = i);
         setStages(updated);
       };
 
-      // Delete
+      // Delete — bloqué pour les colonnes locked
       const handleDelete = (idx) => {
         const stage = stages[idx];
+        if (stage.locked) {
+          alert(`La colonne "${stage.label}" est verrouillée : elle reçoit toujours les nouveaux candidats (création manuelle ou import CSV).`);
+          return;
+        }
         const count = candidateCount(stage.id);
         if (count > 0) {
           alert(`Impossible de supprimer "${stage.label}" : ${count} candidat(s) sont dans cette colonne. Déplacez-les d'abord.`);
@@ -4221,17 +4231,21 @@
               </p>
 
               <div className="stage-manager-list">
-                {stages.map((stage, idx) => (
-                  <div key={stage.id} className="stage-manager-item">
-                    <div className="grip" title="Position">
-                      <Icon name="grip-vertical" size={16} />
+                {stages.map((stage, idx) => {
+                  const isLocked = !!stage.locked;
+                  const upDisabled = idx === 0 || (stages[idx - 1] && stages[idx - 1].locked) || isLocked;
+                  const downDisabled = idx === stages.length - 1 || isLocked;
+                  return (
+                  <div key={stage.id} className="stage-manager-item" style={isLocked ? { background: '#fafce0', borderColor: '#DDE04B' } : {}}>
+                    <div className="grip" title={isLocked ? 'Colonne verrouillée en position 1' : 'Position'} style={isLocked ? { color: '#0f172a' } : {}}>
+                      <Icon name={isLocked ? 'settings' : 'grip-vertical'} size={16} />
                     </div>
 
                     <div
                       className="color-dot"
-                      style={{ background: stage.color }}
-                      title="Changer la couleur"
-                      onClick={() => setEditingColorIdx(editingColorIdx === idx ? null : idx)}
+                      style={{ background: stage.color, opacity: isLocked ? 0.6 : 1, cursor: isLocked ? 'not-allowed' : 'pointer' }}
+                      title={isLocked ? 'Couleur figée (colonne verrouillée)' : 'Changer la couleur'}
+                      onClick={() => !isLocked && setEditingColorIdx(editingColorIdx === idx ? null : idx)}
                     />
 
                     <input
@@ -4239,20 +4253,29 @@
                       value={stage.label}
                       onChange={e => handleRename(idx, e.target.value)}
                       placeholder="Nom de la colonne"
+                      disabled={isLocked}
+                      title={isLocked ? 'Nom figé (colonne verrouillée)' : ''}
+                      style={isLocked ? { color: '#475569', fontWeight: 800, background: 'transparent', cursor: 'not-allowed' } : {}}
                     />
+
+                    {isLocked && (
+                      <span style={{ fontSize: 10, fontWeight: 800, background: '#0f172a', color: '#DDE04B', padding: '3px 8px', borderRadius: 6, letterSpacing: 0.5 }} title="Reçoit toujours les nouveaux candidats (création manuelle + import CSV)">
+                        🔒 ENTRÉE
+                      </span>
+                    )}
 
                     <span style={{ fontSize: 11, color: '#aaa', minWidth: 30, textAlign: 'center' }}>
                       {candidateCount(stage.id) > 0 ? `${candidateCount(stage.id)}` : '0'}
                     </span>
 
                     <div className="stage-manager-actions">
-                      <button onClick={() => handleMoveUp(idx)} disabled={idx === 0} title="Monter">
+                      <button onClick={() => handleMoveUp(idx)} disabled={upDisabled} title={isLocked ? 'Verrouillée' : 'Monter'}>
                         <Icon name="arrow-up" size={14} />
                       </button>
-                      <button onClick={() => handleMoveDown(idx)} disabled={idx === stages.length - 1} title="Descendre">
+                      <button onClick={() => handleMoveDown(idx)} disabled={downDisabled} title={isLocked ? 'Verrouillée' : 'Descendre'}>
                         <Icon name="arrow-down" size={14} />
                       </button>
-                      <button className="danger" onClick={() => handleDelete(idx)} title="Supprimer">
+                      <button className="danger" onClick={() => handleDelete(idx)} disabled={isLocked} title={isLocked ? 'Verrouillée — non supprimable' : 'Supprimer'}>
                         <Icon name="trash" size={14} />
                       </button>
                     </div>
@@ -4270,7 +4293,8 @@
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="stage-add-bar">
